@@ -112,7 +112,7 @@ input:focus, textarea:focus, select:focus{
   font-size:12px;font-weight:950;color:rgba(15,23,42,.8);
 }
 
-.tabs{padding:0;overflow: visible}
+.tabs{padding:0; overflow: visible;} /* IMPORTANT: allow dropdowns */
 .tabbar{
   display:flex;gap:6px;padding:10px;
   background:rgba(255,255,255,.55);
@@ -125,7 +125,7 @@ input:focus, textarea:focus, select:focus{
   font-weight:950;cursor:pointer;
 }
 .tab.active{background:rgba(255,255,255,.9)}
-.tabpanel{display:none;padding:16px}
+.tabpanel{display:none;padding:16px; overflow: visible;}
 .tabpanel.active{display:block}
 
 /* Itinerary toolbar */
@@ -136,6 +136,8 @@ input:focus, textarea:focus, select:focus{
   gap:12px;
   margin-bottom:12px;
   flex-wrap:wrap;
+  position:relative;
+  z-index:10;
 }
 .toolLabel{
   font-size:12px;
@@ -149,9 +151,7 @@ input:focus, textarea:focus, select:focus{
 .tinyCount{font-weight:900; color:rgba(71,85,105,.9); font-size:12px}
 
 /* Make itinerary tab scroll on small screens */
-#tab-itinerary{
-  overflow-x:auto;
-}
+#tab-itinerary{ overflow-x:auto; }
 
 .row{
   display:grid;
@@ -181,9 +181,7 @@ input:focus, textarea:focus, select:focus{
   font-size:18px;
   flex: 0 0 auto;
 }
-.parkCell select{
-  width:100%;
-}
+.parkCell select{ width:100%; }
 
 .icon{
   width:44px;height:42px;border-radius:14px;
@@ -208,6 +206,55 @@ input:focus, textarea:focus, select:focus{
   color:rgba(71,85,105,.9);
   font-weight:750;
   padding:10px;
+}
+
+/* Activities tab */
+.subtabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+.subtab{
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.55);
+  padding:10px 12px;
+  border-radius:999px;
+  font-weight:950;
+  cursor:pointer;
+}
+.subtab.active{ background:rgba(255,255,255,.9); }
+
+.subpanel{ display:none; }
+.subpanel.active{ display:block; }
+
+.activitiesTools{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+
+.activityList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.activityItem{
+  display:grid;
+  grid-template-columns: 1fr 120px 44px;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.6);
+}
+@media (max-width: 520px){
+  .activityItem{ grid-template-columns: 1fr 1fr 44px; }
 }
 
 /* Intro overlay */
@@ -262,5 +309,3 @@ input:focus, textarea:focus, select:focus{
 }
 .intro-sub{margin:0 0 18px 0;color:rgba(255,255,255,.95);font-weight:700}
 .tiny{margin:14px 0 0 0;color:rgba(255,255,255,.85);font-size:12px;font-weight:650}
-.itineraryTools { position: relative; z-index: 10; }
-.tabpanel { overflow: visible; }

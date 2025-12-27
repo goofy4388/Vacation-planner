@@ -106,6 +106,60 @@ const DINING_DB = [
   { park: "Disney Springs", type: "Quick Service", name: "Earl of Sandwich" },
   { park: "Disney Springs", type: "Table Service", name: "The BOATHOUSE" },
   { park: "Disney Springs", type: "Table Service", name: "Raglan Road Irish Pub" }
+  const QUICK_SERVICE_LOCATIONS = {
+  "Magic Kingdom": [
+    "Cosmic Ray’s Starlight Café",
+    "Pecos Bill Tall Tale Inn",
+    "Columbia Harbour House",
+    "Casey’s Corner",
+    "Sleepy Hollow",
+    "Pinocchio Village Haus"
+  ],
+  "EPCOT": [
+    "Sunshine Seasons",
+    "Connections Eatery",
+    "Regal Eagle Smokehouse",
+    "Les Halles Boulangerie"
+  ],
+  "Hollywood Studios": [
+    "Woody’s Lunch Box",
+    "ABC Commissary",
+    "Docking Bay 7",
+    "Backlot Express"
+  ],
+  "Animal Kingdom": [
+    "Satu’li Canteen",
+    "Flame Tree Barbecue",
+    "Harambe Market"
+  ]
+};
+
+const TABLE_SERVICE_LOCATIONS = {
+  "Magic Kingdom": [
+    "Be Our Guest",
+    "Cinderella’s Royal Table",
+    "Skipper Canteen",
+    "Liberty Tree Tavern",
+    "The Crystal Palace"
+  ],
+  "EPCOT": [
+    "Space 220",
+    "Le Cellier Steakhouse",
+    "Via Napoli",
+    "San Angel Inn",
+    "Chefs de France"
+  ],
+  "Hollywood Studios": [
+    "Sci-Fi Dine-In Theater",
+    "50’s Prime Time Café",
+    "Hollywood Brown Derby"
+  ],
+  "Animal Kingdom": [
+    "Tiffins",
+    "Yak & Yeti Restaurant",
+    "Rainforest Café"
+  ]
+};
 ];
 
 /* ---------- ACTIVITIES DEFAULTS ---------- */

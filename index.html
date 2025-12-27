@@ -31,6 +31,7 @@
       </div>
     </div>
     <div class="actions">
+      <button id="exportCalendar" class="btn ghost">Calendar (.ics)</button>
       <button id="export" class="btn ghost">Export</button>
       <button id="reset" class="btn ghost danger">Reset</button>
     </div>
@@ -147,7 +148,7 @@
           <span class="chip" id="chipResort">Resort: —</span>
           <span class="chip" id="chipParty">Party: —</span>
         </div>
-        <p class="muted">Build your days, pack your stuff, and keep notes in one spot.</p>
+        <p class="muted">Build your days, pack your stuff, keep activities, maps, and export your calendar.</p>
       </div>
 
       <div class="card tabs">
@@ -156,6 +157,7 @@
           <button class="tab" data-tab="packing">Packing</button>
           <button class="tab" data-tab="notes">Notes</button>
           <button class="tab" data-tab="activities">Activities</button>
+          <button class="tab" data-tab="maps">Maps</button>
         </div>
 
         <!-- ITINERARY -->
@@ -164,6 +166,14 @@
             <div class="tool">
               <div class="toolLabel">Filter Park</div>
               <select id="parkFilter"></select>
+            </div>
+
+            <div class="tool">
+              <div class="toolLabel">Add Park Day</div>
+              <div class="inline">
+                <select id="addParkSelect"></select>
+                <button id="addParkDay" class="btn ghost">+ Add</button>
+              </div>
             </div>
 
             <div class="toolRight">
@@ -203,19 +213,44 @@
           </div>
 
           <div class="subpanel active" id="sub-free">
-            <div class="activitiesTools">
-              <button id="addFreeActivity" class="btn ghost">+ Add free activity</button>
-              <div class="tinyCount" id="freeCount">0 items</div>
-            </div>
+            <p class="muted smallp">Check items you want, then click “Add to Itinerary”.</p>
             <div id="freeActivities" class="activityList"></div>
           </div>
 
           <div class="subpanel" id="sub-paid">
-            <div class="activitiesTools">
-              <button id="addPaidActivity" class="btn ghost">+ Add paid activity</button>
-              <div class="tinyCount" id="paidCount">0 items</div>
-            </div>
+            <p class="muted smallp">Add an estimated cost (optional), then “Add to Itinerary”.</p>
             <div id="paidActivities" class="activityList"></div>
+          </div>
+        </div>
+
+        <!-- MAPS -->
+        <div class="tabpanel" id="tab-maps">
+          <div class="mapGrid">
+            <div class="mapCard">
+              <h3>Magic Kingdom</h3>
+              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Magic+Kingdom+Park">Open Map</a>
+            </div>
+            <div class="mapCard">
+              <h3>EPCOT</h3>
+              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=EPCOT">Open Map</a>
+            </div>
+            <div class="mapCard">
+              <h3>Hollywood Studios</h3>
+              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Disney%27s+Hollywood+Studios">Open Map</a>
+            </div>
+            <div class="mapCard">
+              <h3>Animal Kingdom</h3>
+              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Disney%27s+Animal+Kingdom">Open Map</a>
+            </div>
+            <div class="mapCard">
+              <h3>Disney Springs</h3>
+              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Disney+Springs">Open Map</a>
+            </div>
+          </div>
+
+          <div class="card soft">
+            <h3>Tip</h3>
+            <p class="muted">Want resort maps too? Pick your resort on the left and I can add a “Resort Map” button that updates automatically.</p>
           </div>
         </div>
       </div>

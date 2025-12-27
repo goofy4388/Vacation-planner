@@ -8,19 +8,8 @@
 </head>
 
 <body>
-  <!-- Intro (movie vibe) -->
-  <div id="intro" class="intro">
-    <div class="intro-card">
-      <div class="sparkles" aria-hidden="true"></div>
-      <h1 class="intro-title">
-        <span class="small">WELCOME HOME</span>
-        Your Vacation Planner
-      </h1>
-      <p class="intro-sub">Sunshine, schedules, and magic—ready when you are.</p>
-      <button id="enter" class="btn primary">Enter Planner</button>
-      <p class="tiny">Tip: Your plans save automatically on this device.</p>
-    </div>
-  </div>
+  <!-- If JS crashes, this bar will show the error -->
+  <div id="errorBar" class="errorBar hidden"></div>
 
   <header class="topbar">
     <div class="brand">
@@ -38,7 +27,6 @@
   </header>
 
   <main class="layout">
-    <!-- Left: Trip info -->
     <aside class="panel">
       <div class="card">
         <h2>Trip Snapshot</h2>
@@ -59,7 +47,6 @@
           </label>
         </div>
 
-        <!-- Resort dropdown -->
         <label class="field">
           <span>Resort / Hotel</span>
           <select id="resort">
@@ -139,7 +126,6 @@
       </div>
     </aside>
 
-    <!-- Right: Planner -->
     <section class="content">
       <div class="card hero">
         <h2 id="heroTitle">Welcome! ✨</h2>
@@ -223,42 +209,47 @@
           </div>
         </div>
 
-        <!-- MAPS -->
+        <!-- MAPS (embedded on screen) -->
         <div class="tabpanel" id="tab-maps">
           <div class="mapGrid">
             <div class="mapCard">
               <h3>Magic Kingdom</h3>
-              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Magic+Kingdom+Park">Open Map</a>
+              <iframe class="mapFrame" loading="lazy"
+                src="https://www.google.com/maps?q=Magic%20Kingdom%20Park&output=embed"></iframe>
             </div>
+
             <div class="mapCard">
               <h3>EPCOT</h3>
-              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=EPCOT">Open Map</a>
+              <iframe class="mapFrame" loading="lazy"
+                src="https://www.google.com/maps?q=EPCOT&output=embed"></iframe>
             </div>
+
             <div class="mapCard">
               <h3>Hollywood Studios</h3>
-              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Disney%27s+Hollywood+Studios">Open Map</a>
+              <iframe class="mapFrame" loading="lazy"
+                src="https://www.google.com/maps?q=Disney%27s%20Hollywood%20Studios&output=embed"></iframe>
             </div>
+
             <div class="mapCard">
               <h3>Animal Kingdom</h3>
-              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Disney%27s+Animal+Kingdom">Open Map</a>
+              <iframe class="mapFrame" loading="lazy"
+                src="https://www.google.com/maps?q=Disney%27s%20Animal%20Kingdom&output=embed"></iframe>
             </div>
+
             <div class="mapCard">
               <h3>Disney Springs</h3>
-              <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Disney+Springs">Open Map</a>
+              <iframe class="mapFrame" loading="lazy"
+                src="https://www.google.com/maps?q=Disney%20Springs&output=embed"></iframe>
             </div>
-          </div>
-
-          <div class="card soft">
-            <h3>Tip</h3>
-            <p class="muted">Want resort maps too? Pick your resort on the left and I can add a “Resort Map” button that updates automatically.</p>
           </div>
         </div>
       </div>
 
-      <div class="footer">Saved on this device. Export anytime.</div>
+      <div class="footer" id="footerStatus">Loading…</div>
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <!-- IMPORTANT: keep this EXACT name -->
+  <script src="./app.js"></script>
 </body>
 </html>

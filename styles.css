@@ -189,6 +189,7 @@ input:focus, textarea:focus{
 }
 .sparkles{
   position:absolute; inset:-60px;
+  pointer-events: None;
   background:
     radial-gradient(circle at 20% 30%, rgba(255,255,255,.9) 0 2px, transparent 3px),
     radial-gradient(circle at 70% 40%, rgba(255,255,255,.8) 0 2px, transparent 3px),

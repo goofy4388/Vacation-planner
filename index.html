@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vacation Planner</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!-- Intro (movie vibe) -->
+  <div id="intro" class="intro">
+    <div class="intro-card">
+      <div class="sparkles" aria-hidden="true"></div>
+      <h1 class="intro-title">
+        <span class="small">WELCOME HOME</span>
+        Your Vacation Planner
+      </h1>
+      <p class="intro-sub">Sunshine, schedules, and magic—ready when you are.</p>
+      <button id="enter" class="btn primary">Enter Planner</button>
+      <p class="tiny">Tip: Your plans save automatically on this device.</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="badge">✦</div>
+      <div>
+        <div class="brand-title">Vacation Planner</div>
+        <div class="brand-sub">Bright • Simple • Ready to plan</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="export" class="btn ghost">Export</button>
+      <button id="reset" class="btn ghost danger">Reset</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Left: Trip info -->
+    <aside class="panel">
+      <div class="card">
+        <h2>Trip Snapshot</h2>
+
+        <label class="field">
+          <span>Trip name</span>
+          <input id="tripName" placeholder="Family Vacation" />
+        </label>
+
+        <div class="grid2">
+          <label class="field">
+            <span>Start</span>
+            <input id="startDate" type="date" />
+          </label>
+          <label class="field">
+            <span>End</span>
+            <input id="endDate" type="date" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Resort / Hotel</span>
+          <input id="resort" placeholder="Beach resort, cabin, etc." />
+        </label>
+
+        <div class="grid2">
+          <label class="field">
+            <span>Party size</span>
+            <input id="party" type="number" min="1" placeholder="4" />
+          </label>
+          <label class="field">
+            <span>Budget ($)</span>
+            <input id="budget" type="number" min="0" placeholder="2500" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Welcome message</span>
+          <input id="welcome" placeholder="Welcome! Let’s plan your trip ✨" />
+        </label>
+      </div>
+
+      <div class="card">
+        <h2>Quick Add</h2>
+        <div class="grid2">
+          <button id="addPlan" class="btn ghost">+ Plan row</button>
+          <button id="addPack" class="btn ghost">+ Packing item</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right: Planner -->
+    <section class="content">
+      <div class="card hero">
+        <h2 id="heroTitle">Welcome! ✨</h2>
+        <div class="chips">
+          <span class="chip" id="chipDates">Dates: —</span>
+          <span class="chip" id="chipResort">Resort: —</span>
+          <span class="chip" id="chipParty">Party: —</span>
+        </div>
+        <p class="muted">Build your days, pack your stuff, and keep notes in one spot.</p>
+      </div>
+
+      <div class="card tabs">
+        <div class="tabbar">
+          <button class="tab active" data-tab="itinerary">Itinerary</button>
+          <button class="tab" data-tab="packing">Packing</button>
+          <button class="tab" data-tab="notes">Notes</button>
+        </div>
+
+        <!-- ITINERARY -->
+        <div class="tabpanel active" id="tab-itinerary">
+          <div class="row head">
+            <div>Day</div><div>Time</div><div>Plan</div><div></div>
+          </div>
+          <div id="planRows"></div>
+        </div>
+
+        <!-- PACKING -->
+        <div class="tabpanel" id="tab-packing">
+          <div id="packRows" class="pack"></div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="tabpanel" id="tab-notes">
+          <textarea id="notes" class="notes" placeholder="Write anything… snacks, must-dos, reminders, etc."></textarea>
+        </div>
+      </div>
+
+      <div class="footer">Saved on this device. Export anytime.</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

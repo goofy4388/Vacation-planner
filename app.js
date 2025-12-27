@@ -1,4 +1,4 @@
-const KEY = "vacation_planner_v5";
+const KEY = "vacation_planner_v6";
 
 const state = {
   tripName: "",
@@ -18,6 +18,21 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+function showError(msg) {
+  const bar = $("errorBar");
+  if (!bar) return;
+  bar.textContent = "JS Error: " + msg;
+  bar.classList.remove("hidden");
+}
+
+window.addEventListener("error", (e) => {
+  showError(e.message || "Unknown error");
+});
+
+window.addEventListener("unhandledrejection", (e) => {
+  showError(e.reason?.message || String(e.reason) || "Promise error");
+});
 
 /* ---------- OPTIONS ---------- */
 
@@ -58,42 +73,24 @@ const TRANSPORT = [
   { value: "Other", label: "Other" }
 ];
 
-/* Big starter lists (editable) */
-const DEFAULT_FREE_ACTIVITIES = [
+const DEFAULT_FREE = [
   "Resort pool time / splash pad",
   "Resort movie under the stars",
   "Resort campfire vibe (bring your own marshmallows)",
-  "Playground time at the resort",
   "Disney Springs window shopping + live entertainment",
-  "Disney Springs: LEGO store displays",
-  "Disney Springs: mural photo hunt",
-  "BoardWalk stroll (street performers at night)",
+  "BoardWalk stroll (night vibes)",
   "Animal Kingdom Lodge: watch animals from overlooks",
-  "Grand Floridian lobby + live piano (when available)",
-  "Polynesian beach sunset view",
-  "Contemporary views + monorail watching",
-  "Resort hopping for theming photos",
-  "Transportation tour (Skyliner/boats/monorail routes)",
-  "Hidden Mickey hunt day",
-  "Parades / cavalcades (with your park ticket)",
-  "Fireworks viewing spots (outside/near areas depending access)",
-  "Gift shop browse + “top souvenirs” ranking game",
-  "People-watching + journaling",
-  "Photo tour: recreate iconic WDW angles with your own phone"
+  "Resort hopping for photos",
+  "Transportation tour (Skyliner/boats/monorail)",
+  "Hidden Mickey hunt",
+  "Photo tour day"
 ];
 
-const DEFAULT_PAID_ACTIVITIES = [
+const DEFAULT_PAID = [
   { name: "Genie+ / Lightning Lane day (if available)", cost: "" },
   { name: "Character dining reservation", cost: "" },
-  { name: "Dessert party (fireworks)", cost: "" },
-  { name: "After Hours event ticket", cost: "" },
-  { name: "Seasonal ticketed party", cost: "" },
-  { name: "Mini golf (Fantasia Gardens / Winter Summerland)", cost: "" },
-  { name: "Savi’s Workshop (lightsaber build)", cost: "" },
+  { name: "Mini golf", cost: "" },
   { name: "Droid Depot build", cost: "" },
-  { name: "Bibbidi Bobbidi Boutique", cost: "" },
-  { name: "Behind-the-scenes tour (varies)", cost: "" },
-  { name: "Boat rental / recreation (if offered)", cost: "" },
   { name: "Specialty dining experience", cost: "" }
 ];
 
@@ -109,7 +106,9 @@ function load() {
   try {
     const data = JSON.parse(raw);
     Object.assign(state, data);
-  } catch {}
+  } catch (e) {
+    showError("Could not load saved data");
+  }
 }
 
 /* ---------- HELPERS ---------- */
@@ -133,7 +132,6 @@ function makeSelect(options, value, onChange, labelFn) {
 }
 
 function nextDayNumber() {
-  // looks for "Day 1", "Day 2" etc; returns next number
   let max = 0;
   for (const p of state.plans) {
     const m = (p.day || "").match(/day\s*(\d+)/i);
@@ -142,45 +140,9 @@ function nextDayNumber() {
   return max + 1;
 }
 
-function dayNumberToDateISO(dayNum) {
-  // If startDate is set, Day 1 => startDate, Day 2 => startDate+1, etc.
-  if (!state.startDate) return "";
-  const base = new Date(state.startDate + "T00:00:00");
-  if (isNaN(base.getTime())) return "";
-  base.setDate(base.getDate() + (dayNum - 1));
-  return base.toISOString().slice(0, 10);
-}
-
-function parseTimeTo24h(timeStr) {
-  // accepts "8:00 AM", "8 AM", "20:00"
-  const s = (timeStr || "").trim();
-  if (!s) return null;
-
-  // 24h format
-  const m24 = s.match(/^(\d{1,2}):(\d{2})$/);
-  if (m24) {
-    const hh = Number(m24[1]);
-    const mm = Number(m24[2]);
-    if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) return { hh, mm };
-  }
-
-  // AM/PM
-  const m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
-  if (!m) return null;
-
-  let hh = Number(m[1]);
-  let mm = m[2] ? Number(m[2]) : 0;
-  const ap = m[3].toUpperCase();
-
-  if (hh < 1 || hh > 12 || mm < 0 || mm > 59) return null;
-  if (ap === "PM" && hh !== 12) hh += 12;
-  if (ap === "AM" && hh === 12) hh = 0;
-  return { hh, mm };
-}
-
 function pad2(n) { return String(n).padStart(2, "0"); }
 
-/* ---------- HEADER / SNAPSHOT ---------- */
+/* ---------- SNAPSHOT ---------- */
 
 function renderHeader() {
   $("heroTitle").textContent = state.welcome?.trim() || "Welcome! ✨";
@@ -240,13 +202,18 @@ function setupActivitiesSubtabs() {
   });
 }
 
-function setupIntro() {
-  $("enter").addEventListener("click", () => {
-    $("intro").classList.add("hidden");
-  });
+/* ---------- ITINERARY ---------- */
+
+function filteredPlans() {
+  if (!state.parkFilter) return state.plans;
+  return state.plans.filter(p => (p.park || "") === state.parkFilter);
 }
 
-/* ---------- ITINERARY ---------- */
+function updateRowCount() {
+  const total = state.plans.length;
+  const shown = filteredPlans().length;
+  $("rowCount").textContent = state.parkFilter ? `${shown}/${total} rows` : `${total} rows`;
+}
 
 function planRow(item) {
   const row = document.createElement("div");
@@ -271,13 +238,12 @@ function planRow(item) {
 
   const parkSel = makeSelect(
     PARK_ROW_OPTIONS,
-    item.park || "",
+    item.park || PARK_ROW_OPTIONS[0].value,
     (val) => {
       item.park = val;
       icon.textContent = parkIcon(val);
       save();
-      if (state.parkFilter) renderPlans();
-      updateRowCount();
+      renderPlans();
     },
     (opt) => `${opt.icon} ${opt.label}`
   );
@@ -289,15 +255,8 @@ function planRow(item) {
   plan.value = item.text || "";
   plan.addEventListener("input", () => { item.text = plan.value; save(); });
 
-  const diningSel = makeSelect(DINING, item.dining || "", (val) => {
-    item.dining = val;
-    save();
-  });
-
-  const transportSel = makeSelect(TRANSPORT, item.transport || "", (val) => {
-    item.transport = val;
-    save();
-  });
+  const diningSel = makeSelect(DINING, item.dining || "", (val) => { item.dining = val; save(); });
+  const transportSel = makeSelect(TRANSPORT, item.transport || "", (val) => { item.transport = val; save(); });
 
   const del = document.createElement("button");
   del.className = "icon";
@@ -313,17 +272,6 @@ function planRow(item) {
   return row;
 }
 
-function filteredPlans() {
-  if (!state.parkFilter) return state.plans;
-  return state.plans.filter(p => (p.park || "") === state.parkFilter);
-}
-
-function updateRowCount() {
-  const total = state.plans.length;
-  const shown = filteredPlans().length;
-  $("rowCount").textContent = state.parkFilter ? `${shown}/${total} rows` : `${total} rows`;
-}
-
 function renderPlans() {
   const wrap = $("planRows");
   wrap.innerHTML = "";
@@ -331,10 +279,9 @@ function renderPlans() {
   updateRowCount();
 }
 
-function setupParkFilter() {
+function setupParkFilterUI() {
   const sel = $("parkFilter");
   sel.innerHTML = "";
-
   PARKS.forEach(opt => {
     const o = document.createElement("option");
     o.value = opt.value;
@@ -343,7 +290,6 @@ function setupParkFilter() {
   });
 
   sel.value = state.parkFilter || "";
-
   sel.addEventListener("change", () => {
     state.parkFilter = sel.value;
     save();
@@ -369,8 +315,8 @@ function setupAddParkDay() {
   });
 
   $("addParkDay").addEventListener("click", () => {
-    const n = nextDayNumber();
     const park = sel.value || "Magic Kingdom";
+    const n = nextDayNumber();
     state.plans.push({
       id: uid(),
       day: `Day ${n}`,
@@ -394,18 +340,12 @@ function packRow(item) {
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = !!item.done;
-  cb.addEventListener("change", () => {
-    item.done = cb.checked;
-    save();
-  });
+  cb.addEventListener("change", () => { item.done = cb.checked; save(); });
 
   const text = document.createElement("input");
   text.placeholder = "Ponchos, chargers, snacks…";
   text.value = item.text || "";
-  text.addEventListener("input", () => {
-    item.text = text.value;
-    save();
-  });
+  text.addEventListener("input", () => { item.text = text.value; save(); });
 
   const del = document.createElement("button");
   del.className = "icon";
@@ -436,21 +376,17 @@ function setupNotes() {
   });
 }
 
-/* ---------- ACTIVITIES (CHECKLIST + ADD TO ITINERARY) ---------- */
+/* ---------- ACTIVITIES ---------- */
 
-function addActivityToItinerary(activityName, costValue) {
-  const n = nextDayNumber(); // default adds as next day if you want; but better: add as a new row at end
-  // We'll add as a new row at bottom (not forcing new day number)
-  const costText = (costValue !== "" && costValue !== null && costValue !== undefined)
-    ? ` ($${costValue})`
-    : "";
-
+function addActivityToItinerary(name, cost) {
+  const n = nextDayNumber();
+  const costText = (cost === 0) ? " ($0)" : (cost ? ` ($${cost})` : "");
   state.plans.push({
     id: uid(),
     day: `Day ${n}`,
     time: "",
     park: "Other",
-    text: `${activityName}${costText}`,
+    text: `${name}${costText}`,
     dining: "",
     transport: ""
   });
@@ -463,17 +399,11 @@ function activityRow(item, kind) {
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = !!item.done;
-  cb.addEventListener("change", () => {
-    item.done = cb.checked;
-    save();
-  });
+  cb.addEventListener("change", () => { item.done = cb.checked; save(); });
 
   const name = document.createElement("input");
   name.value = item.name || "";
-  name.addEventListener("input", () => {
-    item.name = name.value;
-    save();
-  });
+  name.addEventListener("input", () => { item.name = name.value; save(); });
 
   let costEl;
   if (kind === "free") {
@@ -486,10 +416,7 @@ function activityRow(item, kind) {
     cost.min = "0";
     cost.placeholder = "Cost";
     cost.value = item.cost ?? "";
-    cost.addEventListener("input", () => {
-      item.cost = cost.value === "" ? "" : Number(cost.value);
-      save();
-    });
+    cost.addEventListener("input", () => { item.cost = cost.value; save(); });
     costEl = cost;
   }
 
@@ -497,11 +424,10 @@ function activityRow(item, kind) {
   addBtn.className = "btn ghost addBtn";
   addBtn.textContent = "Add to Itinerary";
   addBtn.addEventListener("click", () => {
-    const nameVal = (item.name || "").trim();
-    if (!nameVal) return;
-
-    const costVal = kind === "free" ? 0 : (item.cost === "" ? "" : item.cost);
-    addActivityToItinerary(nameVal, costVal);
+    const nm = (item.name || "").trim();
+    if (!nm) return;
+    const cost = (kind === "free") ? 0 : (item.cost || "");
+    addActivityToItinerary(nm, cost);
     save();
     renderPlans();
   });
@@ -520,11 +446,9 @@ function renderActivities() {
   state.paidActivities.forEach(a => paidWrap.appendChild(activityRow(a, "paid")));
 }
 
-/* ---------- EXPORT CALENDAR (.ics) ---------- */
+/* ---------- EXPORT ---------- */
 
 function buildICS() {
-  // Use Day N from the "day" field + Start Date to generate real dates
-  // If no startDate, we still export but events will be skipped (needs dates).
   if (!state.startDate) {
     alert("Set a Start Date first, then try Calendar (.ics) export.");
     return null;
@@ -539,41 +463,44 @@ function buildICS() {
   const stamp = `${now.getUTCFullYear()}${pad2(now.getUTCMonth()+1)}${pad2(now.getUTCDate())}T${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}${pad2(now.getUTCSeconds())}Z`;
 
   for (const p of state.plans) {
-    const dayMatch = (p.day || "").match(/day\s*(\d+)/i);
-    if (!dayMatch) continue;
+    const m = (p.day || "").match(/day\s*(\d+)/i);
+    if (!m) continue;
 
-    const dayNum = Number(dayMatch[1]);
-    const dateISO = dayNumberToDateISO(dayNum);
-    if (!dateISO) continue;
+    const dayNum = Number(m[1]);
+    const base = new Date(state.startDate + "T00:00:00");
+    if (isNaN(base.getTime())) continue;
+    base.setDate(base.getDate() + (dayNum - 1));
 
-    const t = parseTimeTo24h(p.time || "");
-    const startHH = t ? t.hh : 9;
-    const startMM = t ? t.mm : 0;
+    const yyyy = base.getFullYear();
+    const mm = pad2(base.getMonth() + 1);
+    const dd = pad2(base.getDate());
+    const ymd = `${yyyy}${mm}${dd}`;
 
-    // default duration 60 mins
-    const end = new Date(dateISO + "T00:00:00");
-    end.setHours(startHH, startMM, 0, 0);
-    const start = new Date(end.getTime());
-    end.setMinutes(end.getMinutes() + 60);
+    // If no time, 09:00
+    let hh = 9, min = 0;
+    const ts = (p.time || "").trim().toUpperCase();
+    const ampm = ts.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
+    if (ampm) {
+      hh = Number(ampm[1]);
+      min = ampm[2] ? Number(ampm[2]) : 0;
+      const ap = ampm[3];
+      if (ap === "PM" && hh !== 12) hh += 12;
+      if (ap === "AM" && hh === 12) hh = 0;
+    }
 
-    const dtStart = `${dateISO.replaceAll("-","")}T${pad2(startHH)}${pad2(startMM)}00`;
-    const dtEnd = `${dateISO.replaceAll("-","")}T${pad2(end.getHours())}${pad2(end.getMinutes())}00`;
+    const dtStart = `${ymd}T${pad2(hh)}${pad2(min)}00`;
+    const endMin = (min + 60) % 60;
+    const endHour = (hh + Math.floor((min + 60) / 60)) % 24;
+    const dtEnd = `${ymd}T${pad2(endHour)}${pad2(endMin)}00`;
 
     const summary = `${(p.park ? p.park + " — " : "")}${(p.text || "Plan").trim()}`.trim();
-    const descParts = [];
-    if (p.day) descParts.push(`Day: ${p.day}`);
-    if (p.park) descParts.push(`Park: ${p.park}`);
-    if (p.dining) descParts.push(`Dining: ${p.dining}`);
-    if (p.transport) descParts.push(`Transport: ${p.transport}`);
-    const description = descParts.join("\\n");
 
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${uid()}@vacation-planner`);
     lines.push(`DTSTAMP:${stamp}`);
     lines.push(`DTSTART:${dtStart}`);
     lines.push(`DTEND:${dtEnd}`);
-    lines.push(`SUMMARY:${summary.replaceAll(",", "\\,")}`);
-    lines.push(`DESCRIPTION:${description.replaceAll(",", "\\,")}`);
+    lines.push(`SUMMARY:${summary.replace(/,/g,"\\,")}`);
     lines.push("END:VEVENT");
   }
 
@@ -581,15 +508,13 @@ function buildICS() {
   return lines.join("\r\n");
 }
 
-/* ---------- BUTTONS ---------- */
-
 function setupButtons() {
   $("addPlan").addEventListener("click", () => {
     state.plans.push({
       id: uid(),
       day: "",
       time: "",
-      park: "",
+      park: "Magic Kingdom",
       text: "",
       dining: "",
       transport: ""
@@ -632,14 +557,14 @@ function setupButtons() {
   });
 }
 
-/* ---------- DATA NORMALIZE + SEED ---------- */
+/* ---------- SEED + NORMALIZE ---------- */
 
-function normalizeExistingData() {
+function normalize() {
   state.plans = (state.plans || []).map(p => ({
     id: p.id || uid(),
     day: p.day || "",
     time: p.time || "",
-    park: p.park || "",
+    park: p.park || "Magic Kingdom",
     text: p.text || "",
     dining: p.dining || "",
     transport: p.transport || ""
@@ -678,50 +603,27 @@ function seedIfEmpty() {
   if (state.packing.length === 0) {
     state.packing.push(
       { id: uid(), text: "Power bank / chargers", done: false },
-      { id: uid(), text: "Ponchos / rain jackets", done: false },
-      { id: uid(), text: "Water bottles", done: false }
+      { id: uid(), text: "Ponchos / rain jackets", done: false }
     );
   }
 
   if (state.freeActivities.length === 0) {
-    state.freeActivities = DEFAULT_FREE_ACTIVITIES.map(name => ({ id: uid(), name, done: false }));
+    state.freeActivities = DEFAULT_FREE.map(name => ({ id: uid(), name, done: false }));
   }
 
   if (state.paidActivities.length === 0) {
-    state.paidActivities = DEFAULT_PAID_ACTIVITIES.map(x => ({ id: uid(), name: x.name, cost: x.cost, done: false }));
+    state.paidActivities = DEFAULT_PAID.map(x => ({ id: uid(), name: x.name, cost: x.cost, done: false }));
   }
 }
 
 /* ---------- INIT ---------- */
 
-function setupParkFilterUI() {
-  const sel = $("parkFilter");
-  sel.innerHTML = "";
-  PARKS.forEach(opt => {
-    const o = document.createElement("option");
-    o.value = opt.value;
-    o.textContent = `${opt.icon} ${opt.label}`;
-    sel.appendChild(o);
-  });
-  sel.value = state.parkFilter || "";
-  sel.addEventListener("change", () => {
-    state.parkFilter = sel.value;
-    save();
-    renderPlans();
-  });
-  $("clearFilter").addEventListener("click", () => {
-    state.parkFilter = "";
-    sel.value = "";
-    save();
-    renderPlans();
-  });
-}
-
 function init() {
   load();
-  normalizeExistingData();
+  normalize();
+  seedIfEmpty();
+  save();
 
-  setupIntro();
   setupTabs();
   setupActivitiesSubtabs();
   setupButtons();
@@ -730,13 +632,12 @@ function init() {
   bindSnapshotInputs();
   setupNotes();
 
-  seedIfEmpty();
-  save();
-
   renderHeader();
   renderPlans();
   renderPacking();
   renderActivities();
+
+  $("footerStatus").textContent = "JS Loaded ✅  |  Filters + Add Day + Activities working";
 }
 
 init();

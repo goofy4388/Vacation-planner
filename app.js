@@ -1,4 +1,4 @@
-const KEY = "vacation_planner_v6";
+const KEY = "vacation_planner_v7";
 
 const state = {
   tripName: "",
@@ -13,7 +13,9 @@ const state = {
   notes: "",
   parkFilter: "",
   freeActivities: [],
-  paidActivities: []
+  paidActivities: [],
+  hiddenMickeys: [],
+  hmFilter: ""
 };
 
 const $ = (id) => document.getElementById(id);
@@ -26,13 +28,8 @@ function showError(msg) {
   bar.classList.remove("hidden");
 }
 
-window.addEventListener("error", (e) => {
-  showError(e.message || "Unknown error");
-});
-
-window.addEventListener("unhandledrejection", (e) => {
-  showError(e.reason?.message || String(e.reason) || "Promise error");
-});
+window.addEventListener("error", (e) => showError(e.message || "Unknown error"));
+window.addEventListener("unhandledrejection", (e) => showError(e.reason?.message || String(e.reason) || "Promise error"));
 
 /* ---------- OPTIONS ---------- */
 
@@ -51,14 +48,13 @@ const PARKS = [
 
 const PARK_ROW_OPTIONS = PARKS.filter(p => p.value !== "");
 
-const DINING = [
-  { value: "", label: "Select…" },
+const DINING_TYPES = [
+  { value: "", label: "—" },
   { value: "Quick Service", label: "Quick Service" },
   { value: "Table Service", label: "Table Service" },
   { value: "Snack", label: "Snack" },
   { value: "Character Dining", label: "Character Dining" },
-  { value: "Lounge / Bar", label: "Lounge / Bar" },
-  { value: "Grocery / In-room", label: "Grocery / In-room" }
+  { value: "Lounge / Bar", label: "Lounge / Bar" }
 ];
 
 const TRANSPORT = [
@@ -72,6 +68,47 @@ const TRANSPORT = [
   { value: "Minnie Van", label: "Minnie Van" },
   { value: "Other", label: "Other" }
 ];
+
+/* Dining database starter.
+   You can expand this list as big as you want.
+   Format: { park, type, name }
+*/
+const DINING_DB = [
+  // MAGIC KINGDOM (starter)
+  { park: "Magic Kingdom", type: "Quick Service", name: "Columbia Harbour House" },
+  { park: "Magic Kingdom", type: "Quick Service", name: "Cosmic Ray’s Starlight Café" },
+  { park: "Magic Kingdom", type: "Quick Service", name: "Pecos Bill Tall Tale Inn and Café" },
+  { park: "Magic Kingdom", type: "Quick Service", name: "Casey’s Corner" },
+  { park: "Magic Kingdom", type: "Table Service", name: "Be Our Guest Restaurant" },
+  { park: "Magic Kingdom", type: "Table Service", name: "Cinderella’s Royal Table" },
+  { park: "Magic Kingdom", type: "Table Service", name: "Skipper Canteen" },
+
+  // EPCOT (starter)
+  { park: "EPCOT", type: "Quick Service", name: "Sunshine Seasons" },
+  { park: "EPCOT", type: "Quick Service", name: "Connections Eatery" },
+  { park: "EPCOT", type: "Table Service", name: "Space 220" },
+  { park: "EPCOT", type: "Table Service", name: "Le Cellier Steakhouse" },
+  { park: "EPCOT", type: "Table Service", name: "Via Napoli Ristorante e Pizzeria" },
+
+  // HOLLYWOOD STUDIOS (starter)
+  { park: "Hollywood Studios", type: "Quick Service", name: "Docking Bay 7 Food and Cargo" },
+  { park: "Hollywood Studios", type: "Quick Service", name: "Woody’s Lunch Box" },
+  { park: "Hollywood Studios", type: "Table Service", name: "Sci-Fi Dine-In Theater Restaurant" },
+  { park: "Hollywood Studios", type: "Table Service", name: "50’s Prime Time Café" },
+
+  // ANIMAL KINGDOM (starter)
+  { park: "Animal Kingdom", type: "Quick Service", name: "Satu’li Canteen" },
+  { park: "Animal Kingdom", type: "Quick Service", name: "Flame Tree Barbecue" },
+  { park: "Animal Kingdom", type: "Table Service", name: "Tiffins Restaurant" },
+  { park: "Animal Kingdom", type: "Table Service", name: "Tusker House Restaurant" },
+
+  // DISNEY SPRINGS (starter)
+  { park: "Disney Springs", type: "Quick Service", name: "Earl of Sandwich" },
+  { park: "Disney Springs", type: "Table Service", name: "The BOATHOUSE" },
+  { park: "Disney Springs", type: "Table Service", name: "Raglan Road Irish Pub" }
+];
+
+/* ---------- ACTIVITIES DEFAULTS ---------- */
 
 const DEFAULT_FREE = [
   "Resort pool time / splash pad",
@@ -94,6 +131,15 @@ const DEFAULT_PAID = [
   { name: "Specialty dining experience", cost: "" }
 ];
 
+/* Hidden Mickey starter examples (you can replace/expand). */
+const HM_STARTER = [
+  { park: "Magic Kingdom", area: "Main Street U.S.A.", hint: "Look for a Mickey shape in the pavement details." },
+  { park: "Magic Kingdom", area: "Fantasyland", hint: "Check decorative trim near queues; a Mickey may be hiding in patterns." },
+  { park: "EPCOT", area: "World Celebration", hint: "Scan mural/pattern sections where circles repeat." },
+  { park: "Hollywood Studios", area: "Sunset Boulevard", hint: "Look for subtle shapes in props/decoration." },
+  { park: "Animal Kingdom", area: "Africa", hint: "Check carved or painted patterns where 3 circles could align." }
+];
+
 /* ---------- STORAGE ---------- */
 
 function save() {
@@ -106,7 +152,7 @@ function load() {
   try {
     const data = JSON.parse(raw);
     Object.assign(state, data);
-  } catch (e) {
+  } catch {
     showError("Could not load saved data");
   }
 }
@@ -141,6 +187,15 @@ function nextDayNumber() {
 }
 
 function pad2(n) { return String(n).padStart(2, "0"); }
+
+/* Dining helpers */
+function diningOptionsFor(park, type) {
+  if (!park || !type) return [];
+  return DINING_DB
+    .filter(x => x.park === park && x.type === type)
+    .map(x => x.name)
+    .sort((a,b) => a.localeCompare(b));
+}
 
 /* ---------- SNAPSHOT ---------- */
 
@@ -242,6 +297,8 @@ function planRow(item) {
     (val) => {
       item.park = val;
       icon.textContent = parkIcon(val);
+      // If park changes, refresh restaurant list if dining type already set
+      item.restaurant = item.restaurant || "";
       save();
       renderPlans();
     },
@@ -255,7 +312,46 @@ function planRow(item) {
   plan.value = item.text || "";
   plan.addEventListener("input", () => { item.text = plan.value; save(); });
 
-  const diningSel = makeSelect(DINING, item.dining || "", (val) => { item.dining = val; save(); });
+  const diningTypeSel = makeSelect(
+    DINING_TYPES,
+    item.diningType || "",
+    (val) => {
+      item.diningType = val;
+      // reset restaurant if type changes
+      item.restaurant = "";
+      save();
+      renderPlans();
+    }
+  );
+
+  // Restaurant dropdown depends on park + dining type
+  const restaurantSel = document.createElement("select");
+  const buildRestaurantOptions = () => {
+    restaurantSel.innerHTML = "";
+    const base = document.createElement("option");
+    base.value = "";
+    base.textContent = item.diningType ? "Select…" : "Pick dining type first";
+    restaurantSel.appendChild(base);
+
+    const opts = diningOptionsFor(item.park, item.diningType);
+    opts.forEach(name => {
+      const o = document.createElement("option");
+      o.value = name;
+      o.textContent = name;
+      restaurantSel.appendChild(o);
+    });
+
+    restaurantSel.value = item.restaurant || "";
+    restaurantSel.disabled = !item.diningType || opts.length === 0;
+  };
+
+  buildRestaurantOptions();
+
+  restaurantSel.addEventListener("change", () => {
+    item.restaurant = restaurantSel.value;
+    save();
+  });
+
   const transportSel = makeSelect(TRANSPORT, item.transport || "", (val) => { item.transport = val; save(); });
 
   const del = document.createElement("button");
@@ -268,7 +364,7 @@ function planRow(item) {
     renderPlans();
   });
 
-  row.append(day, time, parkWrap, plan, diningSel, transportSel, del);
+  row.append(day, time, parkWrap, plan, diningTypeSel, restaurantSel, transportSel, del);
   return row;
 }
 
@@ -323,7 +419,8 @@ function setupAddParkDay() {
       time: "",
       park,
       text: "Park day",
-      dining: "",
+      diningType: "",
+      restaurant: "",
       transport: ""
     });
     save();
@@ -387,7 +484,8 @@ function addActivityToItinerary(name, cost) {
     time: "",
     park: "Other",
     text: `${name}${costText}`,
-    dining: "",
+    diningType: "",
+    restaurant: "",
     transport: ""
   });
 }
@@ -446,6 +544,164 @@ function renderActivities() {
   state.paidActivities.forEach(a => paidWrap.appendChild(activityRow(a, "paid")));
 }
 
+/* ---------- HIDDEN MICKEYS ---------- */
+
+function hmFiltered() {
+  if (!state.hmFilter) return state.hiddenMickeys;
+  return state.hiddenMickeys.filter(x => x.park === state.hmFilter);
+}
+
+function updateHmCount() {
+  const total = state.hiddenMickeys.length;
+  const found = state.hiddenMickeys.filter(x => x.found).length;
+  $("hmCount").textContent = `${found}/${total} found`;
+}
+
+function setupHmFilters() {
+  const sel = $("hmFilter");
+  const addSel = $("hmAddPark");
+  sel.innerHTML = "";
+  addSel.innerHTML = "";
+
+  // filter
+  PARKS.forEach(opt => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = `${opt.icon} ${opt.label}`;
+    sel.appendChild(o);
+  });
+  sel.value = state.hmFilter || "";
+  sel.addEventListener("change", () => {
+    state.hmFilter = sel.value;
+    save();
+    renderHiddenMickeys();
+  });
+
+  $("hmClear").addEventListener("click", () => {
+    state.hmFilter = "";
+    sel.value = "";
+    save();
+    renderHiddenMickeys();
+  });
+
+  // add park options (no "All Parks")
+  PARK_ROW_OPTIONS.forEach(opt => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = `${opt.icon} ${opt.label}`;
+    addSel.appendChild(o);
+  });
+}
+
+let hmPhotoTargetId = null;
+
+function openPhotoPickerFor(id) {
+  hmPhotoTargetId = id;
+  const input = $("hmPhotoInput");
+  input.value = "";
+  input.click();
+}
+
+function setupHmPhotoInput() {
+  const input = $("hmPhotoInput");
+  input.addEventListener("change", async () => {
+    const file = input.files && input.files[0];
+    if (!file || !hmPhotoTargetId) return;
+
+    // Convert to base64 data URL (simple, but can hit localStorage limits if you add too many photos)
+    const dataUrl = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
+    const item = state.hiddenMickeys.find(x => x.id === hmPhotoTargetId);
+    if (item) {
+      item.photo = dataUrl;
+      save();
+      renderHiddenMickeys();
+    }
+    hmPhotoTargetId = null;
+  });
+}
+
+function hmRow(item) {
+  const row = document.createElement("div");
+  row.className = "hmItem";
+
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = !!item.found;
+  cb.addEventListener("change", () => {
+    item.found = cb.checked;
+    save();
+    updateHmCount();
+  });
+
+  const park = document.createElement("div");
+  park.textContent = item.park;
+
+  const area = document.createElement("div");
+  area.textContent = item.area || "—";
+
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = item.hint || "";
+
+  const photoWrap = document.createElement("div");
+  photoWrap.className = "hmPhotoWrap";
+
+  if (item.photo) {
+    const img = document.createElement("img");
+    img.className = "hmThumb";
+    img.src = item.photo;
+    img.alt = "Hidden Mickey photo";
+    photoWrap.appendChild(img);
+  }
+
+  const btn = document.createElement("button");
+  btn.className = "btn ghost";
+  btn.textContent = item.photo ? "Replace Photo" : "Add Photo";
+  btn.addEventListener("click", () => openPhotoPickerFor(item.id));
+
+  photoWrap.appendChild(btn);
+
+  row.append(cb, park, area, hint, photoWrap);
+  return row;
+}
+
+function renderHiddenMickeys() {
+  const wrap = $("hmList");
+  wrap.innerHTML = "";
+  hmFiltered().forEach(x => wrap.appendChild(hmRow(x)));
+  updateHmCount();
+}
+
+function setupHmAdd() {
+  $("hmAddBtn").addEventListener("click", () => {
+    const park = $("hmAddPark").value;
+    const area = $("hmAddArea").value.trim();
+    const hint = $("hmAddHint").value.trim();
+
+    if (!park) return;
+
+    state.hiddenMickeys.push({
+      id: uid(),
+      park,
+      area,
+      hint,
+      found: false,
+      photo: ""
+    });
+
+    $("hmAddArea").value = "";
+    $("hmAddHint").value = "";
+    save();
+    renderHiddenMickeys();
+  });
+}
+
 /* ---------- EXPORT ---------- */
 
 function buildICS() {
@@ -476,7 +732,6 @@ function buildICS() {
     const dd = pad2(base.getDate());
     const ymd = `${yyyy}${mm}${dd}`;
 
-    // If no time, 09:00
     let hh = 9, min = 0;
     const ts = (p.time || "").trim().toUpperCase();
     const ampm = ts.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
@@ -493,7 +748,8 @@ function buildICS() {
     const endHour = (hh + Math.floor((min + 60) / 60)) % 24;
     const dtEnd = `${ymd}T${pad2(endHour)}${pad2(endMin)}00`;
 
-    const summary = `${(p.park ? p.park + " — " : "")}${(p.text || "Plan").trim()}`.trim();
+    const diningPart = p.restaurant ? ` • ${p.restaurant}` : "";
+    const summary = `${(p.park ? p.park + " — " : "")}${(p.text || "Plan").trim()}${diningPart}`.trim();
 
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${uid()}@vacation-planner`);
@@ -516,7 +772,8 @@ function setupButtons() {
       time: "",
       park: "Magic Kingdom",
       text: "",
-      dining: "",
+      diningType: "",
+      restaurant: "",
       transport: ""
     });
     save();
@@ -566,7 +823,8 @@ function normalize() {
     time: p.time || "",
     park: p.park || "Magic Kingdom",
     text: p.text || "",
-    dining: p.dining || "",
+    diningType: p.diningType || "",
+    restaurant: p.restaurant || "",
     transport: p.transport || ""
   }));
 
@@ -589,14 +847,23 @@ function normalize() {
     done: !!a.done
   }));
 
+  state.hiddenMickeys = (state.hiddenMickeys || []).map(h => ({
+    id: h.id || uid(),
+    park: h.park || "Magic Kingdom",
+    area: h.area || "",
+    hint: h.hint || "",
+    found: !!h.found,
+    photo: h.photo || ""
+  }));
+
   state.notes = state.notes || "";
 }
 
 function seedIfEmpty() {
   if (state.plans.length === 0) {
     state.plans.push(
-      { id: uid(), day: "Day 1 (Arrival)", time: "3:00 PM", park: "Resort Day", text: "Check in + pool time", dining: "Quick Service", transport: "Car / Uber / Lyft" },
-      { id: uid(), day: "Day 2", time: "9:00 AM", park: "Magic Kingdom", text: "Rope drop + classics", dining: "Table Service", transport: "Bus" }
+      { id: uid(), day: "Day 1 (Arrival)", time: "3:00 PM", park: "Resort Day", text: "Check in + pool time", diningType: "", restaurant: "", transport: "Car / Uber / Lyft" },
+      { id: uid(), day: "Day 2", time: "9:00 AM", park: "Magic Kingdom", text: "Rope drop + classics", diningType: "Quick Service", restaurant: "Pecos Bill Tall Tale Inn and Café", transport: "Bus" }
     );
   }
 
@@ -614,9 +881,37 @@ function seedIfEmpty() {
   if (state.paidActivities.length === 0) {
     state.paidActivities = DEFAULT_PAID.map(x => ({ id: uid(), name: x.name, cost: x.cost, done: false }));
   }
+
+  if (state.hiddenMickeys.length === 0) {
+    state.hiddenMickeys = HM_STARTER.map(x => ({ id: uid(), ...x, found: false, photo: "" }));
+  }
 }
 
 /* ---------- INIT ---------- */
+
+function setupHmFiltersUI() {
+  setupHmFilters();
+  setupHmAdd();
+  setupHmPhotoInput();
+}
+
+function setupTabsExtras() {
+  setupActivitiesSubtabs();
+}
+
+function setupParkFilterUIAll() {
+  setupParkFilterUI();
+  setupAddParkDay();
+}
+
+function setupNotesUI() {
+  setupNotes();
+}
+
+function setupTabsUI() {
+  setupTabs();
+  setupTabsExtras();
+}
 
 function init() {
   load();
@@ -624,20 +919,21 @@ function init() {
   seedIfEmpty();
   save();
 
-  setupTabs();
-  setupActivitiesSubtabs();
+  setupTabsUI();
   setupButtons();
-  setupParkFilterUI();
-  setupAddParkDay();
+  setupParkFilterUIAll();
   bindSnapshotInputs();
-  setupNotes();
+  setupNotesUI();
+
+  setupHmFiltersUI();
 
   renderHeader();
   renderPlans();
   renderPacking();
   renderActivities();
+  renderHiddenMickeys();
 
-  $("footerStatus").textContent = "JS Loaded ✅  |  Filters + Add Day + Activities working";
+  $("footerStatus").textContent = "JS Loaded ✅ | Dining dropdowns + Hidden Mickeys + Calendar export ready";
 }
 
 init();

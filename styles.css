@@ -71,7 +71,7 @@ h2{margin:0 0 10px 0}
 .field{display:flex;flex-direction:column;gap:6px;margin:10px 0}
 .field span{font-size:12px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.3px}
 
-input, textarea{
+input, textarea, select{
   border:1px solid rgba(15,23,42,.12);
   border-radius:14px;
   padding:11px 12px;
@@ -79,7 +79,7 @@ input, textarea{
   outline:none;
   background:rgba(255,255,255,.9);
 }
-input:focus, textarea:focus{
+input:focus, textarea:focus, select:focus{
   border-color: rgba(15,23,42,.28);
   box-shadow:0 0 0 4px rgba(255,255,255,.55);
 }
@@ -128,9 +128,34 @@ input:focus, textarea:focus{
 .tabpanel{display:none;padding:16px}
 .tabpanel.active{display:block}
 
+/* Itinerary toolbar */
+.itineraryTools{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+.toolLabel{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+  margin-bottom:6px;
+}
+.toolRight{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.tinyCount{font-weight:900; color:rgba(71,85,105,.9); font-size:12px}
+
+/* Make itinerary tab scroll on small screens */
+#tab-itinerary{
+  overflow-x:auto;
+}
+
 .row{
   display:grid;
-  grid-template-columns: 120px 110px 1fr 44px;
+  grid-template-columns: 140px 110px 190px 1fr 170px 170px 44px;
   gap:10px;
   align-items:center;
   margin-bottom:10px;
@@ -139,6 +164,25 @@ input:focus, textarea:focus{
   margin-bottom:8px;
   font-size:12px;color:var(--muted);
   font-weight:950;text-transform:uppercase;letter-spacing:.3px;
+}
+
+.parkCell{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.parkIcon{
+  width:34px;height:40px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.6);
+  border:1px solid rgba(15,23,42,.10);
+  font-size:18px;
+  flex: 0 0 auto;
+}
+.parkCell select{
+  width:100%;
 }
 
 .icon{
@@ -189,7 +233,7 @@ input:focus, textarea:focus{
 }
 .sparkles{
   position:absolute; inset:-60px;
-  pointer-events: None;
+  pointer-events:none; /* IMPORTANT: don’t block clicks */
   background:
     radial-gradient(circle at 20% 30%, rgba(255,255,255,.9) 0 2px, transparent 3px),
     radial-gradient(circle at 70% 40%, rgba(255,255,255,.8) 0 2px, transparent 3px),
@@ -218,19 +262,3 @@ input:focus, textarea:focus{
 }
 .intro-sub{margin:0 0 18px 0;color:rgba(255,255,255,.95);font-weight:700}
 .tiny{margin:14px 0 0 0;color:rgba(255,255,255,.85);font-size:12px;font-weight:650}
-.intro-card { position: relative; }
-.intro-card > *:not(.sparkles) { position: relative; z-index: 2; }
-.sparkles { z-index: 1; }
-select {
-border:1px solid rgba(15,23,42,.12);
-border-radius:14px;
-padding:11px 12px;
-font-size:15px;
-outline:none;
-background:rgba(255,255,255,.9);
-}
-select:focus{
-border-color: rgba(15,23,42,.28);
-box-shadow:0 0 0 4px rgba(255,255,255,.55);
-}
-

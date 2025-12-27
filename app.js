@@ -1,223 +1,398 @@
-const KEY = "vacation_planner_v2";
+const KEY = "vacation_planner_v3";
 
 const state = {
-tripName: "",
-startDate: "",
-endDate: "",
-resort: "",
-party: "",
-budget: "",
-welcome: "",
-plans: [],
-packing: [],
-notes: ""
+  tripName: "",
+  startDate: "",
+  endDate: "",
+  resort: "",
+  party: "",
+  budget: "",
+  welcome: "",
+  plans: [],
+  packing: [],
+  notes: "",
+  parkFilter: "" // saved filter
 };
 
 const $ = (id) => document.getElementById(id);
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
 
+const PARKS = [
+  { value: "", icon: "🌈", label: "All Parks" },
+  { value: "Magic Kingdom", icon: "🏰", label: "Magic Kingdom" },
+  { value: "EPCOT", icon: "🌐", label: "EPCOT" },
+  { value: "Hollywood Studios", icon: "🎬", label: "Hollywood Studios" },
+  { value: "Animal Kingdom", icon: "🦁", label: "Animal Kingdom" },
+  { value: "Disney Springs", icon: "🛍️", label: "Disney Springs" },
+  { value: "Typhoon Lagoon", icon: "🌊", label: "Typhoon Lagoon" },
+  { value: "Blizzard Beach", icon: "❄️", label: "Blizzard Beach" },
+  { value: "Resort Day", icon: "🏖️", label: "Resort Day" },
+  { value: "Other", icon: "✨", label: "Other" }
+];
+
+const DINING = [
+  { value: "", label: "Select…" },
+  { value: "Quick Service", label: "Quick Service" },
+  { value: "Table Service", label: "Table Service" },
+  { value: "Snack", label: "Snack" },
+  { value: "Character Dining", label: "Character Dining" },
+  { value: "Lounge / Bar", label: "Lounge / Bar" },
+  { value: "Grocery / In-room", label: "Grocery / In-room" }
+];
+
+const TRANSPORT = [
+  { value: "", label: "Select…" },
+  { value: "Walk", label: "Walk" },
+  { value: "Bus", label: "Bus" },
+  { value: "Monorail", label: "Monorail" },
+  { value: "Skyliner", label: "Skyliner" },
+  { value: "Boat", label: "Boat" },
+  { value: "Car / Uber / Lyft", label: "Car / Uber / Lyft" },
+  { value: "Minnie Van", label: "Minnie Van" },
+  { value: "Other", label: "Other" }
+];
+
+function parkIcon(parkValue) {
+  const found = PARKS.find(p => p.value === parkValue);
+  return found ? found.icon : "✨";
+}
+
 function save() {
-localStorage.setItem(KEY, JSON.stringify(state));
+  localStorage.setItem(KEY, JSON.stringify(state));
 }
 
 function load() {
-const raw = localStorage.getItem(KEY);
-if (!raw) return;
-try {
-const data = JSON.parse(raw);
-Object.assign(state, data);
-} catch {}
+  const raw = localStorage.getItem(KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    Object.assign(state, data);
+  } catch {}
 }
 
 function renderHeader() {
-$("heroTitle").textContent = state.welcome?.trim() || "Welcome! ✨";
+  $("heroTitle").textContent = state.welcome?.trim() || "Welcome! ✨";
 
-const dates = state.startDate && state.endDate
-? `${state.startDate} → ${state.endDate}`
-: "—";
+  const dates = state.startDate && state.endDate
+    ? `${state.startDate} → ${state.endDate}`
+    : "—";
 
-$("chipDates").textContent = `Dates: ${dates}`;
-$("chipResort").textContent = `Resort: ${state.resort || "—"}`;
-$("chipParty").textContent = `Party: ${state.party || "—"}`;
+  $("chipDates").textContent = `Dates: ${dates}`;
+  $("chipResort").textContent = `Resort: ${state.resort || "—"}`;
+  $("chipParty").textContent = `Party: ${state.party || "—"}`;
 
-// inputs
-$("tripName").value = state.tripName || "";
-$("startDate").value = state.startDate || "";
-$("endDate").value = state.endDate || "";
-$("resort").value = state.resort || "";
-$("party").value = state.party || "";
-$("budget").value = state.budget || "";
-$("welcome").value = state.welcome || "";
+  $("tripName").value = state.tripName || "";
+  $("startDate").value = state.startDate || "";
+  $("endDate").value = state.endDate || "";
+  $("resort").value = state.resort || "";
+  $("party").value = state.party || "";
+  $("budget").value = state.budget || "";
+  $("welcome").value = state.welcome || "";
 }
 
 function bindSnapshotInputs() {
-const ids = ["tripName","startDate","endDate","resort","party","budget","welcome"];
-ids.forEach((id) => {
-$(id).addEventListener("input", () => {
-state[id] = $(id).value;
-save();
-renderHeader();
-});
-});
+  const ids = ["tripName","startDate","endDate","resort","party","budget","welcome"];
+  ids.forEach((id) => {
+    const el = $(id);
+    const handler = () => {
+      state[id] = el.value;
+      save();
+      renderHeader();
+    };
+    el.addEventListener("input", handler);
+    el.addEventListener("change", handler);
+  });
+}
+
+function makeSelect(options, value, onChange, labelFn) {
+  const sel = document.createElement("select");
+  options.forEach((opt) => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = labelFn ? labelFn(opt) : opt.label;
+    sel.appendChild(o);
+  });
+  sel.value = value ?? "";
+  sel.addEventListener("change", () => onChange(sel.value));
+  return sel;
 }
 
 function planRow(item) {
-const row = document.createElement("div");
-row.className = "row";
+  const row = document.createElement("div");
+  row.className = "row";
 
-const day = document.createElement("input");
-day.placeholder = "Day 1 / MK Day";
-day.value = item.day || "";
-day.addEventListener("input", () => { item.day = day.value; save(); });
+  const day = document.createElement("input");
+  day.placeholder = "Day 1 / Arrival";
+  day.value = item.day || "";
+  day.addEventListener("input", () => { item.day = day.value; save(); });
 
-const time = document.createElement("input");
-time.placeholder = "8:00 AM";
-time.value = item.time || "";
-time.addEventListener("input", () => { item.time = time.value; save(); });
+  const time = document.createElement("input");
+  time.placeholder = "8:00 AM";
+  time.value = item.time || "";
+  time.addEventListener("input", () => { item.time = time.value; save(); });
 
-const plan = document.createElement("input");
-plan.placeholder = "What are we doing?";
-plan.value = item.text || "";
-plan.addEventListener("input", () => { item.text = plan.value; save(); });
+  // Park icon + select
+  const parkWrap = document.createElement("div");
+  parkWrap.className = "parkCell";
 
-const del = document.createElement("button");
-del.className = "icon";
-del.textContent = "✕";
-del.addEventListener("click", () => {
-state.plans = state.plans.filter(p => p.id !== item.id);
-save();
-renderPlans();
-});
+  const icon = document.createElement("div");
+  icon.className = "parkIcon";
+  icon.textContent = parkIcon(item.park || "");
 
-row.append(day, time, plan, del);
-return row;
+  const parkSel = makeSelect(
+    PARKS.filter(p => p.value !== ""), // row select doesn't need "All Parks"
+    item.park || "",
+    (val) => {
+      item.park = val;
+      icon.textContent = parkIcon(val);
+      save();
+
+      // If a filter is on, changing park might hide/show the row. Re-render.
+      if (state.parkFilter) renderPlans();
+      updateRowCount();
+    },
+    (opt) => `${opt.icon} ${opt.label}`
+  );
+
+  parkWrap.append(icon, parkSel);
+
+  const plan = document.createElement("input");
+  plan.placeholder = "What are we doing?";
+  plan.value = item.text || "";
+  plan.addEventListener("input", () => { item.text = plan.value; save(); });
+
+  const diningSel = makeSelect(DINING, item.dining || "", (val) => {
+    item.dining = val;
+    save();
+  });
+
+  const transportSel = makeSelect(TRANSPORT, item.transport || "", (val) => {
+    item.transport = val;
+    save();
+  });
+
+  const del = document.createElement("button");
+  del.className = "icon";
+  del.textContent = "✕";
+  del.addEventListener("click", () => {
+    state.plans = state.plans.filter(p => p.id !== item.id);
+    save();
+    renderPlans();
+  });
+
+  row.append(day, time, parkWrap, plan, diningSel, transportSel, del);
+  return row;
+}
+
+function filteredPlans() {
+  if (!state.parkFilter) return state.plans;
+  return state.plans.filter(p => (p.park || "") === state.parkFilter);
+}
+
+function updateRowCount() {
+  const total = state.plans.length;
+  const shown = filteredPlans().length;
+  const label = state.parkFilter ? `${shown}/${total} rows` : `${total} rows`;
+  $("rowCount").textContent = label;
 }
 
 function renderPlans() {
-const wrap = $("planRows");
-wrap.innerHTML = "";
-state.plans.forEach(p => wrap.appendChild(planRow(p)));
+  const wrap = $("planRows");
+  wrap.innerHTML = "";
+
+  const list = filteredPlans();
+  list.forEach(p => wrap.appendChild(planRow(p)));
+
+  updateRowCount();
 }
 
 function packRow(item) {
-const row = document.createElement("div");
-row.className = "packItem";
+  const row = document.createElement("div");
+  row.className = "packItem";
 
-const cb = document.createElement("input");
-cb.type = "checkbox";
-cb.checked = !!item.done;
-cb.addEventListener("change", () => {
-item.done = cb.checked;
-save();
-});
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = !!item.done;
+  cb.addEventListener("change", () => {
+    item.done = cb.checked;
+    save();
+  });
 
-const text = document.createElement("input");
-text.placeholder = "Ponchos, chargers, snacks…";
-text.value = item.text || "";
-text.addEventListener("input", () => {
-item.text = text.value;
-save();
-});
+  const text = document.createElement("input");
+  text.placeholder = "Ponchos, chargers, snacks…";
+  text.value = item.text || "";
+  text.addEventListener("input", () => {
+    item.text = text.value;
+    save();
+  });
 
-const del = document.createElement("button");
-del.className = "icon";
-del.textContent = "✕";
-del.addEventListener("click", () => {
-state.packing = state.packing.filter(x => x.id !== item.id);
-save();
-renderPacking();
-});
+  const del = document.createElement("button");
+  del.className = "icon";
+  del.textContent = "✕";
+  del.addEventListener("click", () => {
+    state.packing = state.packing.filter(x => x.id !== item.id);
+    save();
+    renderPacking();
+  });
 
-row.append(cb, text, del);
-return row;
+  row.append(cb, text, del);
+  return row;
 }
 
 function renderPacking() {
-const wrap = $("packRows");
-wrap.innerHTML = "";
-state.packing.forEach(i => wrap.appendChild(packRow(i)));
+  const wrap = $("packRows");
+  wrap.innerHTML = "";
+  state.packing.forEach(i => wrap.appendChild(packRow(i)));
 }
 
 function setupTabs() {
-document.querySelectorAll(".tab").forEach(btn => {
-btn.addEventListener("click", () => {
-document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
-btn.classList.add("active");
-document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-});
-});
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+    });
+  });
 }
 
 function setupIntro() {
-$("enter").addEventListener("click", () => {
-$("intro").classList.add("hidden");
-});
+  $("enter").addEventListener("click", () => {
+    $("intro").classList.add("hidden");
+  });
+}
+
+function setupParkFilter() {
+  // Build filter dropdown (includes "All Parks")
+  const filterOptions = PARKS.map(p => ({
+    value: p.value,
+    label: p.label,
+    icon: p.icon
+  }));
+
+  const sel = $("parkFilter");
+  sel.innerHTML = "";
+
+  filterOptions.forEach(opt => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = `${opt.icon} ${opt.label}`;
+    sel.appendChild(o);
+  });
+
+  // Load saved filter
+  sel.value = state.parkFilter || "";
+
+  sel.addEventListener("change", () => {
+    state.parkFilter = sel.value;
+    save();
+    renderPlans();
+  });
+
+  $("clearFilter").addEventListener("click", () => {
+    state.parkFilter = "";
+    sel.value = "";
+    save();
+    renderPlans();
+  });
 }
 
 function setupButtons() {
-$("addPlan").addEventListener("click", () => {
-state.plans.push({ id: uid(), day: "", time: "", text: "" });
-save();
-renderPlans();
-});
+  $("addPlan").addEventListener("click", () => {
+    state.plans.push({
+      id: uid(),
+      day: "",
+      time: "",
+      park: "",
+      text: "",
+      dining: "",
+      transport: ""
+    });
+    save();
+    renderPlans();
+  });
 
-$("addPack").addEventListener("click", () => {
-state.packing.push({ id: uid(), text: "", done: false });
-save();
-renderPacking();
-});
+  $("addPack").addEventListener("click", () => {
+    state.packing.push({ id: uid(), text: "", done: false });
+    save();
+    renderPacking();
+  });
 
-$("notes").addEventListener("input", () => {
-state.notes = $("notes").value;
-save();
-});
+  $("notes").addEventListener("input", () => {
+    state.notes = $("notes").value;
+    save();
+  });
 
-$("export").addEventListener("click", () => {
-const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-const a = document.createElement("a");
-a.href = URL.createObjectURL(blob);
-a.download = "vacation-planner.json";
-document.body.appendChild(a);
-a.click();
-a.remove();
-});
+  $("export").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "vacation-planner.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
 
-$("reset").addEventListener("click", () => {
-localStorage.removeItem(KEY);
-location.reload();
-});
+  $("reset").addEventListener("click", () => {
+    localStorage.removeItem(KEY);
+    location.reload();
+  });
+}
+
+function normalizeExistingData() {
+  // If older saved rows exist, ensure fields exist
+  state.plans = (state.plans || []).map(p => ({
+    id: p.id || uid(),
+    day: p.day || "",
+    time: p.time || "",
+    park: p.park || "",
+    text: p.text || "",
+    dining: p.dining || "",
+    transport: p.transport || ""
+  }));
+
+  state.packing = (state.packing || []).map(i => ({
+    id: i.id || uid(),
+    text: i.text || "",
+    done: !!i.done
+  }));
+
+  state.notes = state.notes || "";
 }
 
 function seedIfEmpty() {
-if (state.plans.length === 0) {
-state.plans.push(
-{ id: uid(), day: "Day 1 (Arrival)", time: "", text: "Check in + pool time" },
-{ id: uid(), day: "Day 2", time: "", text: "Morning fun • break • night show" }
-);
-}
-if (state.packing.length === 0) {
-state.packing.push(
-{ id: uid(), text: "Power bank / chargers", done: false },
-{ id: uid(), text: "Ponchos / rain jackets", done: false },
-{ id: uid(), text: "Water bottles", done: false }
-);
-}
-if (!state.notes) state.notes = "";
-$("notes").value = state.notes;
+  if (state.plans.length === 0) {
+    state.plans.push(
+      { id: uid(), day: "Day 1 (Arrival)", time: "3:00 PM", park: "Resort Day", text: "Check in + pool time", dining: "Quick Service", transport: "Car / Uber / Lyft" },
+      { id: uid(), day: "Day 2", time: "9:00 AM", park: "Magic Kingdom", text: "Rope drop + classics", dining: "Table Service", transport: "Bus" }
+    );
+  }
+  if (state.packing.length === 0) {
+    state.packing.push(
+      { id: uid(), text: "Power bank / chargers", done: false },
+      { id: uid(), text: "Ponchos / rain jackets", done: false },
+      { id: uid(), text: "Water bottles", done: false }
+    );
+  }
+  $("notes").value = state.notes;
 }
 
 function init() {
-load();
-setupIntro();
-setupTabs();
-setupButtons();
-bindSnapshotInputs();
-seedIfEmpty();
-save();
-renderHeader();
-renderPlans();
-renderPacking();
+  load();
+  normalizeExistingData();
+
+  setupIntro();
+  setupTabs();
+  setupButtons();
+  setupParkFilter();
+  bindSnapshotInputs();
+
+  seedIfEmpty();
+  save();
+
+  renderHeader();
+  renderPlans();
+  renderPacking();
 }
 
 init();

@@ -991,3 +991,40 @@ function init() {
 }
 
 init();
+const HIDDEN_MICKEYS = [
+  {
+    park: "Magic Kingdom",
+    location: "Pirates of the Caribbean",
+    hint: "Look at the wall above the jail cell."
+  },
+  {
+    park: "Magic Kingdom",
+    location: "Haunted Mansion",
+    hint: "In the ballroom chandelier scene."
+  },
+  {
+    park: "EPCOT",
+    location: "The Seas Pavilion",
+    hint: "Near the coral reef tank."
+  },
+  {
+    park: "Hollywood Studios",
+    location: "Star Tours queue",
+    hint: "On the radar screen."
+  },
+  {
+    park: "Animal Kingdom",
+    location: "Tree of Life",
+    hint: "Animal carvings form a Mickey shape."
+  }
+];
+if (state.hiddenMickeys.length === 0) {
+  state.hiddenMickeys = HIDDEN_MICKEYS.map(h => ({
+    id: uid(),
+    park: h.park,
+    location: h.location,
+    hint: h.hint,
+    found: false,
+    photo: ""
+  }));
+}

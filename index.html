@@ -155,6 +155,7 @@
           <button class="tab active" data-tab="itinerary">Itinerary</button>
           <button class="tab" data-tab="packing">Packing</button>
           <button class="tab" data-tab="notes">Notes</button>
+          <button class="tab" data-tab="activities">Activities</button>
         </div>
 
         <!-- ITINERARY -->
@@ -192,6 +193,30 @@
         <!-- NOTES -->
         <div class="tabpanel" id="tab-notes">
           <textarea id="notes" class="notes" placeholder="Write anything… snacks, must-dos, reminders, etc."></textarea>
+        </div>
+
+        <!-- ACTIVITIES -->
+        <div class="tabpanel" id="tab-activities">
+          <div class="subtabs">
+            <button class="subtab active" data-subtab="free">Free</button>
+            <button class="subtab" data-subtab="paid">Costs Money</button>
+          </div>
+
+          <div class="subpanel active" id="sub-free">
+            <div class="activitiesTools">
+              <button id="addFreeActivity" class="btn ghost">+ Add free activity</button>
+              <div class="tinyCount" id="freeCount">0 items</div>
+            </div>
+            <div id="freeActivities" class="activityList"></div>
+          </div>
+
+          <div class="subpanel" id="sub-paid">
+            <div class="activitiesTools">
+              <button id="addPaidActivity" class="btn ghost">+ Add paid activity</button>
+              <div class="tinyCount" id="paidCount">0 items</div>
+            </div>
+            <div id="paidActivities" class="activityList"></div>
+          </div>
         </div>
       </div>
 

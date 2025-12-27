@@ -221,3 +221,16 @@ input:focus, textarea:focus{
 .intro-card { position: relative; }
 .intro-card > *:not(.sparkles) { position: relative; z-index: 2; }
 .sparkles { z-index: 1; }
+select {
+border:1px solid rgba(15,23,42,.12);
+border-radius:14px;
+padding:11px 12px;
+font-size:15px;
+outline:none;
+background:rgba(255,255,255,.9);
+}
+select:focus{
+border-color: rgba(15,23,42,.28);
+box-shadow:0 0 0 4px rgba(255,255,255,.55);
+}
+

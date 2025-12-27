@@ -112,7 +112,7 @@ input:focus, textarea:focus, select:focus{
   font-size:12px;font-weight:950;color:rgba(15,23,42,.8);
 }
 
-.tabs{padding:0;overflow:hidden}
+.tabs{padding:0;overflow: visible}
 .tabbar{
   display:flex;gap:6px;padding:10px;
   background:rgba(255,255,255,.55);
@@ -262,3 +262,5 @@ input:focus, textarea:focus, select:focus{
 }
 .intro-sub{margin:0 0 18px 0;color:rgba(255,255,255,.95);font-weight:700}
 .tiny{margin:14px 0 0 0;color:rgba(255,255,255,.85);font-size:12px;font-weight:650}
+.itineraryTools { position: relative; z-index: 10; }
+.tabpanel { overflow: visible; }

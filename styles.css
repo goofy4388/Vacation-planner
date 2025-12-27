@@ -164,7 +164,7 @@ input:focus, textarea:focus, select:focus{
 
 .row{
   display:grid;
-  grid-template-columns: 140px 110px 190px 1fr 170px 170px 44px;
+  grid-template-columns: 120px 110px 180px 1fr 140px 220px 160px 44px;
   gap:10px;
   align-items:center;
   margin-bottom:10px;
@@ -254,6 +254,55 @@ input:focus, textarea:focus, select:focus{
   border:0;
   border-radius:12px;
   margin-top:10px;
+}
+
+/* Hidden Mickeys */
+.hmTools{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.hmAdd{
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.55);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:12px;
+}
+.hmAddTitle{font-weight:950;margin-bottom:10px}
+.hmAddGrid{
+  display:grid;
+  grid-template-columns: 180px 1fr 1fr 120px;
+  gap:10px;
+}
+@media (max-width: 900px){
+  .hmAddGrid{grid-template-columns:1fr}
+}
+.hmList{display:flex;flex-direction:column;gap:10px}
+.hmItem{
+  display:grid;
+  grid-template-columns: 26px 160px 160px 1fr 140px;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.6);
+}
+.hmItem .hint{color:rgba(71,85,105,.95); font-weight:750}
+.hmThumb{
+  width:54px;height:54px;border-radius:12px;
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(255,255,255,.6);
+  object-fit:cover;
+}
+.hmPhotoWrap{display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap}
+@media (max-width: 900px){
+  .hmItem{grid-template-columns: 26px 1fr; }
+  .hmPhotoWrap{justify-content:flex-start}
 }
 
 .footer{

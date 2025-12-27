@@ -8,7 +8,6 @@
 </head>
 
 <body>
-  <!-- If JS crashes, this bar will show the error -->
   <div id="errorBar" class="errorBar hidden"></div>
 
   <header class="topbar">
@@ -134,7 +133,7 @@
           <span class="chip" id="chipResort">Resort: —</span>
           <span class="chip" id="chipParty">Party: —</span>
         </div>
-        <p class="muted">Build your days, pack your stuff, keep activities, maps, and export your calendar.</p>
+        <p class="muted">Build your days, pack your stuff, keep activities, maps, dining, hidden Mickeys, and export your calendar.</p>
       </div>
 
       <div class="card tabs">
@@ -144,6 +143,7 @@
           <button class="tab" data-tab="notes">Notes</button>
           <button class="tab" data-tab="activities">Activities</button>
           <button class="tab" data-tab="maps">Maps</button>
+          <button class="tab" data-tab="hidden">Hidden Mickeys</button>
         </div>
 
         <!-- ITINERARY -->
@@ -173,7 +173,8 @@
             <div>Time</div>
             <div>Park</div>
             <div>Plan</div>
-            <div>Dining</div>
+            <div>Dining Type</div>
+            <div>Restaurant</div>
             <div>Transport</div>
             <div></div>
           </div>
@@ -209,7 +210,7 @@
           </div>
         </div>
 
-        <!-- MAPS (embedded on screen) -->
+        <!-- MAPS -->
         <div class="tabpanel" id="tab-maps">
           <div class="mapGrid">
             <div class="mapCard">
@@ -243,13 +244,42 @@
             </div>
           </div>
         </div>
+
+        <!-- HIDDEN MICKEYS -->
+        <div class="tabpanel" id="tab-hidden">
+          <div class="hmTools">
+            <div class="tool">
+              <div class="toolLabel">Filter Park</div>
+              <select id="hmFilter"></select>
+            </div>
+            <div class="toolRight">
+              <button id="hmClear" class="btn ghost">Clear</button>
+              <div class="tinyCount" id="hmCount">0 found</div>
+            </div>
+          </div>
+
+          <div class="hmAdd">
+            <div class="hmAddTitle">Add your own Hidden Mickey (optional)</div>
+            <div class="hmAddGrid">
+              <select id="hmAddPark"></select>
+              <input id="hmAddArea" placeholder="Area (ex: Fantasyland)" />
+              <input id="hmAddHint" placeholder="Hint (your words)" />
+              <button id="hmAddBtn" class="btn ghost">+ Add</button>
+            </div>
+            <p class="muted smallp">Tip: The preloaded list is just examples. You can paste your full list later.</p>
+          </div>
+
+          <div id="hmList" class="hmList"></div>
+
+          <!-- hidden file input used for photo attach -->
+          <input id="hmPhotoInput" class="hidden" type="file" accept="image/*" capture="environment" />
+        </div>
       </div>
 
       <div class="footer" id="footerStatus">Loading…</div>
     </section>
   </main>
 
-  <!-- IMPORTANT: keep this EXACT name -->
   <script src="./app.js"></script>
 </body>
 </html>

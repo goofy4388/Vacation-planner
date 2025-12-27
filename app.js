@@ -1,4 +1,4 @@
-const KEY = "vacation_planner_v3";
+const KEY = "vacation_planner_v4";
 
 const state = {
   tripName: "",
@@ -11,7 +11,9 @@ const state = {
   plans: [],
   packing: [],
   notes: "",
-  parkFilter: "" // saved filter
+  parkFilter: "",
+  freeActivities: [],
+  paidActivities: []
 };
 
 const $ = (id) => document.getElementById(id);
@@ -29,6 +31,8 @@ const PARKS = [
   { value: "Resort Day", icon: "🏖️", label: "Resort Day" },
   { value: "Other", icon: "✨", label: "Other" }
 ];
+
+const PARK_ROW_OPTIONS = PARKS.filter(p => p.value !== "");
 
 const DINING = [
   { value: "", label: "Select…" },
@@ -50,6 +54,62 @@ const TRANSPORT = [
   { value: "Car / Uber / Lyft", label: "Car / Uber / Lyft" },
   { value: "Minnie Van", label: "Minnie Van" },
   { value: "Other", label: "Other" }
+];
+
+/* Big starter lists (editable) */
+const DEFAULT_FREE_ACTIVITIES = [
+  "Resort pool time / splash pad",
+  "Resort movie under the stars",
+  "Resort campfire (marshmallows if you bring them)",
+  "Playground time at the resort",
+  "Disney Springs window shopping + live entertainment",
+  "Disney Springs photo spots (World of Disney, mural walls)",
+  "BoardWalk stroll (street performers at night)",
+  "Animal Kingdom Lodge: watch animals from overlooks",
+  "Grand Floridian lobby + live piano (when available)",
+  "Polynesian beach sunset view",
+  "Contemporary observation deck views",
+  "Skyliner ride (if you have park/resort access; just ride around)",
+  "Monorail ride (if you have access; great for vibes)",
+  "Fort Wilderness: walk the grounds / trails",
+  "Resort hopping (lobby + theming photos)",
+  "Pin trading (look for boards/cast members)",
+  "PhotoPass “own” photos (take your own photo tour)",
+  "Park: free atmosphere shows (streetmosphere)",
+  "Park: parades / cavalcades",
+  "Park: fireworks viewing (from outside areas if available)",
+  "Park: explore gift shops + hidden details hunt",
+  "Park: meet-and-greet lines (if included with your ticket)",
+  "Hidden Mickey hunt day",
+  "Transportation tour: boats/buses/Skyliner for exploring",
+  "Take a “snack budget” walk but don’t buy—rank your top snacks",
+  "Watch a resort lobby documentary loop / ambience",
+  "People-watching + journaling",
+  "Disney Springs: LEGO store displays",
+  "Disney Springs: World of Disney browse"
+];
+
+const DEFAULT_PAID_ACTIVITIES = [
+  "Genie+ / Lightning Lane day (if available)",
+  "Character dining reservation",
+  "Dessert party (fireworks dessert party)",
+  "After Hours event ticket",
+  "Special ticketed parties (seasonal events)",
+  "Souvenir budget shopping at Disney Springs",
+  "Mini golf (Fantasia Gardens / Winter Summerland)",
+  "Golf or footgolf",
+  "Savi’s Workshop (lightsaber build)",
+  "Droid Depot build",
+  "Bibbidi Bobbidi Boutique",
+  "Behind-the-scenes tours (varies)",
+  "Fishing excursion (varies)",
+  "Horse carriage ride (if offered)",
+  "Spa day (Grand Floridian / etc.)",
+  "Paid photo session / prints",
+  "Boat rental (if offered)",
+  "Dining “progressive” meal at resorts",
+  "Specialty coffee + treat tour",
+  "Merch scavenger hunt challenge (buy 1 thing per land)"
 ];
 
 function parkIcon(parkValue) {
@@ -117,6 +177,8 @@ function makeSelect(options, value, onChange, labelFn) {
   return sel;
 }
 
+/* ---------- ITINERARY ---------- */
+
 function planRow(item) {
   const row = document.createElement("div");
   row.className = "row";
@@ -140,14 +202,12 @@ function planRow(item) {
   icon.textContent = parkIcon(item.park || "");
 
   const parkSel = makeSelect(
-    PARKS.filter(p => p.value !== ""), // row select doesn't need "All Parks"
+    PARK_ROW_OPTIONS,
     item.park || "",
     (val) => {
       item.park = val;
       icon.textContent = parkIcon(val);
       save();
-
-      // If a filter is on, changing park might hide/show the row. Re-render.
       if (state.parkFilter) renderPlans();
       updateRowCount();
     },
@@ -192,19 +252,44 @@ function filteredPlans() {
 function updateRowCount() {
   const total = state.plans.length;
   const shown = filteredPlans().length;
-  const label = state.parkFilter ? `${shown}/${total} rows` : `${total} rows`;
-  $("rowCount").textContent = label;
+  $("rowCount").textContent = state.parkFilter ? `${shown}/${total} rows` : `${total} rows`;
 }
 
 function renderPlans() {
   const wrap = $("planRows");
   wrap.innerHTML = "";
-
-  const list = filteredPlans();
-  list.forEach(p => wrap.appendChild(planRow(p)));
-
+  filteredPlans().forEach(p => wrap.appendChild(planRow(p)));
   updateRowCount();
 }
+
+function setupParkFilter() {
+  const sel = $("parkFilter");
+  sel.innerHTML = "";
+
+  PARKS.forEach(opt => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = `${opt.icon} ${opt.label}`;
+    sel.appendChild(o);
+  });
+
+  sel.value = state.parkFilter || "";
+
+  sel.addEventListener("change", () => {
+    state.parkFilter = sel.value;
+    save();
+    renderPlans();
+  });
+
+  $("clearFilter").addEventListener("click", () => {
+    state.parkFilter = "";
+    sel.value = "";
+    save();
+    renderPlans();
+  });
+}
+
+/* ---------- PACKING ---------- */
 
 function packRow(item) {
   const row = document.createElement("div");
@@ -245,6 +330,93 @@ function renderPacking() {
   state.packing.forEach(i => wrap.appendChild(packRow(i)));
 }
 
+/* ---------- NOTES ---------- */
+
+function setupNotes() {
+  $("notes").value = state.notes || "";
+  $("notes").addEventListener("input", () => {
+    state.notes = $("notes").value;
+    save();
+  });
+}
+
+/* ---------- ACTIVITIES ---------- */
+
+function activityRow(item, kind) {
+  const row = document.createElement("div");
+  row.className = "activityItem";
+
+  const name = document.createElement("input");
+  name.placeholder = kind === "free" ? "Free activity…" : "Paid activity…";
+  name.value = item.name || "";
+  name.addEventListener("input", () => {
+    item.name = name.value;
+    save();
+  });
+
+  const cost = document.createElement("input");
+  cost.type = "number";
+  cost.min = "0";
+  cost.placeholder = kind === "free" ? "0" : "Cost";
+  cost.value = item.cost ?? (kind === "free" ? 0 : "");
+  cost.addEventListener("input", () => {
+    item.cost = cost.value === "" ? "" : Number(cost.value);
+    save();
+    updateActivityCounts();
+  });
+
+  if (kind === "free") {
+    cost.value = 0;
+    cost.disabled = true;
+  }
+
+  const del = document.createElement("button");
+  del.className = "icon";
+  del.textContent = "✕";
+  del.addEventListener("click", () => {
+    if (kind === "free") {
+      state.freeActivities = state.freeActivities.filter(x => x.id !== item.id);
+    } else {
+      state.paidActivities = state.paidActivities.filter(x => x.id !== item.id);
+    }
+    save();
+    renderActivities();
+  });
+
+  row.append(name, cost, del);
+  return row;
+}
+
+function updateActivityCounts() {
+  $("freeCount").textContent = `${state.freeActivities.length} items`;
+  $("paidCount").textContent = `${state.paidActivities.length} items`;
+}
+
+function renderActivities() {
+  const freeWrap = $("freeActivities");
+  const paidWrap = $("paidActivities");
+  freeWrap.innerHTML = "";
+  paidWrap.innerHTML = "";
+
+  state.freeActivities.forEach(a => freeWrap.appendChild(activityRow(a, "free")));
+  state.paidActivities.forEach(a => paidWrap.appendChild(activityRow(a, "paid")));
+
+  updateActivityCounts();
+}
+
+function setupActivitiesSubtabs() {
+  document.querySelectorAll(".subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`sub-${btn.dataset.subtab}`).classList.add("active");
+    });
+  });
+}
+
+/* ---------- UI BASICS ---------- */
+
 function setupTabs() {
   document.querySelectorAll(".tab").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -259,41 +431,6 @@ function setupTabs() {
 function setupIntro() {
   $("enter").addEventListener("click", () => {
     $("intro").classList.add("hidden");
-  });
-}
-
-function setupParkFilter() {
-  // Build filter dropdown (includes "All Parks")
-  const filterOptions = PARKS.map(p => ({
-    value: p.value,
-    label: p.label,
-    icon: p.icon
-  }));
-
-  const sel = $("parkFilter");
-  sel.innerHTML = "";
-
-  filterOptions.forEach(opt => {
-    const o = document.createElement("option");
-    o.value = opt.value;
-    o.textContent = `${opt.icon} ${opt.label}`;
-    sel.appendChild(o);
-  });
-
-  // Load saved filter
-  sel.value = state.parkFilter || "";
-
-  sel.addEventListener("change", () => {
-    state.parkFilter = sel.value;
-    save();
-    renderPlans();
-  });
-
-  $("clearFilter").addEventListener("click", () => {
-    state.parkFilter = "";
-    sel.value = "";
-    save();
-    renderPlans();
   });
 }
 
@@ -318,9 +455,16 @@ function setupButtons() {
     renderPacking();
   });
 
-  $("notes").addEventListener("input", () => {
-    state.notes = $("notes").value;
+  $("addFreeActivity").addEventListener("click", () => {
+    state.freeActivities.push({ id: uid(), name: "", cost: 0 });
     save();
+    renderActivities();
+  });
+
+  $("addPaidActivity").addEventListener("click", () => {
+    state.paidActivities.push({ id: uid(), name: "", cost: "" });
+    save();
+    renderActivities();
   });
 
   $("export").addEventListener("click", () => {
@@ -340,7 +484,6 @@ function setupButtons() {
 }
 
 function normalizeExistingData() {
-  // If older saved rows exist, ensure fields exist
   state.plans = (state.plans || []).map(p => ({
     id: p.id || uid(),
     day: p.day || "",
@@ -357,6 +500,18 @@ function normalizeExistingData() {
     done: !!i.done
   }));
 
+  state.freeActivities = (state.freeActivities || []).map(a => ({
+    id: a.id || uid(),
+    name: a.name || "",
+    cost: 0
+  }));
+
+  state.paidActivities = (state.paidActivities || []).map(a => ({
+    id: a.id || uid(),
+    name: a.name || "",
+    cost: a.cost ?? ""
+  }));
+
   state.notes = state.notes || "";
 }
 
@@ -367,6 +522,7 @@ function seedIfEmpty() {
       { id: uid(), day: "Day 2", time: "9:00 AM", park: "Magic Kingdom", text: "Rope drop + classics", dining: "Table Service", transport: "Bus" }
     );
   }
+
   if (state.packing.length === 0) {
     state.packing.push(
       { id: uid(), text: "Power bank / chargers", done: false },
@@ -374,7 +530,14 @@ function seedIfEmpty() {
       { id: uid(), text: "Water bottles", done: false }
     );
   }
-  $("notes").value = state.notes;
+
+  if (state.freeActivities.length === 0) {
+    state.freeActivities = DEFAULT_FREE_ACTIVITIES.map(name => ({ id: uid(), name, cost: 0 }));
+  }
+
+  if (state.paidActivities.length === 0) {
+    state.paidActivities = DEFAULT_PAID_ACTIVITIES.map(name => ({ id: uid(), name, cost: "" }));
+  }
 }
 
 function init() {
@@ -383,9 +546,11 @@ function init() {
 
   setupIntro();
   setupTabs();
+  setupActivitiesSubtabs();
   setupButtons();
   setupParkFilter();
   bindSnapshotInputs();
+  setupNotes();
 
   seedIfEmpty();
   save();
@@ -393,6 +558,7 @@ function init() {
   renderHeader();
   renderPlans();
   renderPacking();
+  renderActivities();
 }
 
 init();

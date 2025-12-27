@@ -6,280 +6,333 @@
   <title>Vacation Planner</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
-  <div id="errorBar" class="errorBar hidden"></div>
+  <!-- Sparkle background -->
+  <canvas id="sparkleCanvas" aria-hidden="true"></canvas>
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="badge">✦</div>
-      <div>
-        <div class="brand-title">Vacation Planner</div>
-        <div class="brand-sub">Bright • Simple • Ready to plan</div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge" aria-hidden="true">✨</div>
+        <div>
+          <div class="brand-title">Vacation Planner</div>
+          <div class="brand-sub">Bright • Simple • Ready to plan</div>
+        </div>
       </div>
-    </div>
-    <div class="actions">
-      <button id="exportCalendar" class="btn ghost">Calendar (.ics)</button>
-      <button id="export" class="btn ghost">Export</button>
-      <button id="reset" class="btn ghost danger">Reset</button>
-    </div>
-  </header>
 
-  <main class="layout">
-    <aside class="panel">
-      <div class="card">
+      <div class="topbar-actions">
+        <button class="btn ghost" id="btnExportJSON" title="Export your plan as a backup file">Export Backup</button>
+        <label class="btn ghost" title="Import a backup file">
+          Import Backup
+          <input id="fileImportJSON" type="file" accept="application/json" hidden />
+        </label>
+        <button class="btn" id="btnExportICS" title="Export itinerary to calendar (.ics)">Export Calendar</button>
+        <button class="btn ghost" id="btnReset" title="Reset this device (cannot be undone)">Reset</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Left panel -->
+      <aside class="panel card">
         <h2>Trip Snapshot</h2>
 
-        <label class="field">
-          <span>Trip name</span>
-          <input id="tripName" placeholder="Family Vacation" />
-        </label>
+        <div class="field">
+          <label for="tripName">Trip Name</label>
+          <input id="tripName" type="text" placeholder="Family Vacation" />
+        </div>
 
-        <div class="grid2">
-          <label class="field">
-            <span>Start</span>
+        <div class="row">
+          <div class="field">
+            <label for="startDate">Start</label>
             <input id="startDate" type="date" />
-          </label>
-          <label class="field">
-            <span>End</span>
+          </div>
+          <div class="field">
+            <label for="endDate">End</label>
             <input id="endDate" type="date" />
-          </label>
+          </div>
         </div>
 
-        <label class="field">
-          <span>Resort / Hotel</span>
-          <select id="resort">
-            <option value="">Select a resort…</option>
-
-            <optgroup label="Value Resorts">
-              <option>Disney’s All-Star Movies Resort</option>
-              <option>Disney’s All-Star Music Resort</option>
-              <option>Disney’s All-Star Sports Resort</option>
-              <option>Disney’s Pop Century Resort</option>
-              <option>Disney’s Art of Animation Resort</option>
-            </optgroup>
-
-            <optgroup label="Moderate Resorts">
-              <option>Disney’s Caribbean Beach Resort</option>
-              <option>Disney’s Coronado Springs Resort</option>
-              <option>Disney’s Port Orleans Resort – French Quarter</option>
-              <option>Disney’s Port Orleans Resort – Riverside</option>
-              <option>The Cabins at Disney’s Fort Wilderness Resort</option>
-            </optgroup>
-
-            <optgroup label="Deluxe Resorts">
-              <option>Disney’s Animal Kingdom Lodge</option>
-              <option>Disney’s Beach Club Resort</option>
-              <option>Disney’s BoardWalk Inn</option>
-              <option>Disney’s Contemporary Resort</option>
-              <option>Disney’s Grand Floridian Resort & Spa</option>
-              <option>Disney’s Polynesian Village Resort</option>
-              <option>Disney’s Wilderness Lodge</option>
-              <option>Disney’s Yacht Club Resort</option>
-            </optgroup>
-
-            <optgroup label="Deluxe Villa Resorts">
-              <option>Bay Lake Tower at Disney’s Contemporary Resort</option>
-              <option>Boulder Ridge Villas at Disney’s Wilderness Lodge</option>
-              <option>Copper Creek Villas & Cabins at Disney’s Wilderness Lodge</option>
-              <option>Disney’s Animal Kingdom Villas – Jambo House</option>
-              <option>Disney’s Animal Kingdom Villas – Kidani Village</option>
-              <option>Disney’s Beach Club Villas</option>
-              <option>Disney’s BoardWalk Villas</option>
-              <option>Disney’s Old Key West Resort</option>
-              <option>Disney’s Riviera Resort</option>
-              <option>Disney’s Saratoga Springs Resort & Spa</option>
-              <option>The Villas at Disney’s Grand Floridian Resort & Spa</option>
-              <option>The Villas at Disney’s Polynesian Village Resort</option>
-            </optgroup>
-
-            <optgroup label="Campground">
-              <option>Disney’s Fort Wilderness Resort & Campground</option>
-            </optgroup>
-          </select>
-        </label>
-
-        <div class="grid2">
-          <label class="field">
-            <span>Party size</span>
-            <input id="party" type="number" min="1" placeholder="4" />
-          </label>
-          <label class="field">
-            <span>Budget ($)</span>
-            <input id="budget" type="number" min="0" placeholder="2500" />
-          </label>
+        <div class="field">
+          <label for="resortSelect">Resort / Hotel</label>
+          <select id="resortSelect"></select>
         </div>
 
-        <label class="field">
-          <span>Welcome message</span>
-          <input id="welcome" placeholder="Welcome! Let’s plan your trip ✨" />
-        </label>
-      </div>
-
-      <div class="card">
-        <h2>Quick Add</h2>
-        <div class="grid2">
-          <button id="addPlan" class="btn ghost">+ Plan row</button>
-          <button id="addPack" class="btn ghost">+ Packing item</button>
-        </div>
-      </div>
-    </aside>
-
-    <section class="content">
-      <div class="card hero">
-        <h2 id="heroTitle">Welcome! ✨</h2>
-        <div class="chips">
-          <span class="chip" id="chipDates">Dates: —</span>
-          <span class="chip" id="chipResort">Resort: —</span>
-          <span class="chip" id="chipParty">Party: —</span>
-        </div>
-        <p class="muted">Build your days, pack your stuff, keep activities, maps, dining, hidden Mickeys, and export your calendar.</p>
-      </div>
-
-      <div class="card tabs">
-        <div class="tabbar">
-          <button class="tab active" data-tab="itinerary">Itinerary</button>
-          <button class="tab" data-tab="packing">Packing</button>
-          <button class="tab" data-tab="notes">Notes</button>
-          <button class="tab" data-tab="activities">Activities</button>
-          <button class="tab" data-tab="maps">Maps</button>
-          <button class="tab" data-tab="hidden">Hidden Mickeys</button>
+        <div class="row">
+          <div class="field">
+            <label for="partySize">Party Size</label>
+            <input id="partySize" type="number" min="1" max="30" />
+          </div>
+          <div class="field">
+            <label for="budget">Budget ($)</label>
+            <input id="budget" type="number" min="0" step="1" />
+          </div>
         </div>
 
-        <!-- ITINERARY -->
-        <div class="tabpanel active" id="tab-itinerary">
-          <div class="itineraryTools">
-            <div class="tool">
-              <div class="toolLabel">Filter Park</div>
-              <select id="parkFilter"></select>
+        <div class="field">
+          <label for="welcomeMsg">Welcome Message</label>
+          <textarea id="welcomeMsg" rows="3" placeholder="Welcome! Let’s plan your trip ✨"></textarea>
+        </div>
+
+        <div class="miniStats">
+          <div class="miniStat">
+            <div class="miniLabel">Planned items</div>
+            <div class="miniValue" id="statItems">0</div>
+          </div>
+          <div class="miniStat">
+            <div class="miniLabel">Estimated cost</div>
+            <div class="miniValue" id="statCost">$0</div>
+          </div>
+          <div class="miniStat">
+            <div class="miniLabel">Budget left</div>
+            <div class="miniValue" id="statLeft">$0</div>
+          </div>
+        </div>
+
+        <div class="hint">
+          Tip: Everything auto-saves on this device. Export a backup before switching devices.
+        </div>
+      </aside>
+
+      <!-- Right panel -->
+      <section class="content card">
+        <div class="hero">
+          <div class="heroTitle" id="heroWelcome">Welcome! ✨</div>
+          <div class="heroMeta">
+            <span class="pill" id="heroDates">Dates: —</span>
+            <span class="pill" id="heroResort">Resort: —</span>
+            <span class="pill" id="heroParty">Party: —</span>
+          </div>
+          <div class="heroDesc" id="heroDesc">
+            Build your days, pack your stuff, keep activities, maps, dining, and hidden finds — and export your calendar.
+          </div>
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Planner tabs">
+          <button class="tab active" data-tab="itinerary" role="tab">Itinerary</button>
+          <button class="tab" data-tab="packing" role="tab">Packing</button>
+          <button class="tab" data-tab="notes" role="tab">Notes</button>
+          <button class="tab" data-tab="activities" role="tab">Activities</button>
+          <button class="tab" data-tab="dining" role="tab">Dining</button>
+          <button class="tab" data-tab="maps" role="tab">Maps</button>
+          <button class="tab" data-tab="hidden" role="tab">Hidden Finds</button>
+        </nav>
+
+        <div class="toolbar">
+          <div class="toolGroup">
+            <div class="toolLabel">Filter Park</div>
+            <select id="filterPark"></select>
+            <button class="btn ghost" id="btnClearFilter">Clear</button>
+          </div>
+
+          <div class="toolGroup">
+            <div class="toolLabel">Add Park Day</div>
+            <select id="addDayPark"></select>
+            <button class="btn" id="btnAddDay">+ Add</button>
+          </div>
+
+          <div class="toolGroup right">
+            <div class="subtle" id="saveStatus">Saved on this device.</div>
+          </div>
+        </div>
+
+        <!-- Panels -->
+        <section class="tabPanel active" id="tab-itinerary">
+          <div class="tableWrap">
+            <table class="planTable">
+              <thead>
+                <tr>
+                  <th style="width:140px">Day</th>
+                  <th style="width:110px">Time</th>
+                  <th style="width:160px">Park</th>
+                  <th>Plan</th>
+                  <th style="width:210px">Dining</th>
+                  <th style="width:110px">Cost</th>
+                  <th style="width:120px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="itineraryBody"></tbody>
+            </table>
+          </div>
+
+          <div class="rowActions">
+            <button class="btn ghost" id="btnAddItem">+ Add Item</button>
+            <button class="btn ghost" id="btnExpandDays">Auto-create Days from Dates</button>
+          </div>
+        </section>
+
+        <section class="tabPanel" id="tab-packing">
+          <div class="split">
+            <div class="card inner">
+              <h3>Packing Checklist</h3>
+              <div class="inlineRow">
+                <input id="packNew" type="text" placeholder="Add an item (e.g., ponchos, sunscreen)" />
+                <button class="btn" id="packAdd">Add</button>
+              </div>
+              <div class="checklist" id="packList"></div>
             </div>
 
-            <div class="tool">
-              <div class="toolLabel">Add Park Day</div>
-              <div class="inline">
-                <select id="addParkSelect"></select>
-                <button id="addParkDay" class="btn ghost">+ Add</button>
+            <div class="card inner">
+              <h3>Smart Ideas</h3>
+              <ul class="bullets" id="packTips"></ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="tabPanel" id="tab-notes">
+          <div class="split">
+            <div class="card inner">
+              <h3>Notes</h3>
+              <textarea id="notesText" rows="14" placeholder="Write anything: flight info, stroller notes, priorities, reminders..."></textarea>
+            </div>
+            <div class="card inner">
+              <h3>Quick Reminders</h3>
+              <div class="miniCallouts" id="reminders"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tabPanel" id="tab-activities">
+          <div class="segmented">
+            <button class="seg active" data-seg="free">Free</button>
+            <button class="seg" data-seg="paid">Costs Money</button>
+          </div>
+
+          <div class="activityHelp">
+            Tap a checklist item → choose a day/time/park → “Add to Itinerary”. The activity list itself can’t be deleted.
+          </div>
+
+          <div class="activityGrid">
+            <div class="card inner">
+              <h3 id="activityTitle">Free Activities</h3>
+              <div class="activityList" id="activityList"></div>
+            </div>
+
+            <div class="card inner">
+              <h3>Add Selected to Itinerary</h3>
+              <div class="field">
+                <label for="actDay">Day</label>
+                <select id="actDay"></select>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="actTime">Time</label>
+                  <input id="actTime" type="time" />
+                </div>
+                <div class="field">
+                  <label for="actPark">Park</label>
+                  <select id="actPark"></select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="actCost">Cost (optional)</label>
+                <input id="actCost" type="number" min="0" step="1" placeholder="0" />
+              </div>
+              <button class="btn" id="btnAddActivityToItinerary">Add to Itinerary</button>
+              <div class="subtle small" id="actSelectedInfo">No activity selected.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tabPanel" id="tab-dining">
+          <div class="diningTop">
+            <div class="field">
+              <label for="diningPark">Park</label>
+              <select id="diningPark"></select>
+            </div>
+            <div class="field">
+              <label for="diningType">Type</label>
+              <select id="diningType">
+                <option value="quick">Quick Service</option>
+                <option value="table">Table Service</option>
+              </select>
+            </div>
+            <div class="field grow">
+              <label for="diningSearch">Search</label>
+              <input id="diningSearch" type="text" placeholder="Type a restaurant name..." />
+            </div>
+          </div>
+
+          <div class="diningGrid">
+            <div class="card inner">
+              <h3>Dining Options</h3>
+              <div class="diningList" id="diningList"></div>
+            </div>
+
+            <div class="card inner">
+              <h3>Add to Itinerary</h3>
+              <div class="field">
+                <label for="dinDay">Day</label>
+                <select id="dinDay"></select>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="dinTime">Time</label>
+                  <input id="dinTime" type="time" />
+                </div>
+                <div class="field">
+                  <label for="dinPark">Park</label>
+                  <select id="dinPark"></select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="dinCost">Estimated Cost (optional)</label>
+                <input id="dinCost" type="number" min="0" step="1" placeholder="0" />
+              </div>
+              <button class="btn" id="btnAddDiningToItinerary">Add Dining Plan</button>
+              <div class="subtle small" id="dinSelectedInfo">No dining option selected.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tabPanel" id="tab-maps">
+          <div class="mapsGrid" id="mapsGrid"></div>
+          <div class="subtle small">
+            Maps are embedded for quick planning. You can still open a full map in a new tab using the “Open Full Map” button.
+          </div>
+        </section>
+
+        <section class="tabPanel" id="tab-hidden">
+          <div class="hiddenTop">
+            <div class="field">
+              <label for="hiddenPark">Park</label>
+              <select id="hiddenPark"></select>
+            </div>
+            <div class="field grow">
+              <label for="hiddenSearch">Search</label>
+              <input id="hiddenSearch" type="text" placeholder="Search by location or hint..." />
+            </div>
+          </div>
+
+          <div class="hiddenGrid">
+            <div class="card inner">
+              <h3>Hidden Finds Checklist</h3>
+              <div class="hiddenList" id="hiddenList"></div>
+              <div class="hint">
+                Want “82+”? Add entries in <code>SEED_HIDDEN_FINDS</code> in <code>app.js</code>. No other code changes needed.
               </div>
             </div>
 
-            <div class="toolRight">
-              <button id="clearFilter" class="btn ghost">Clear</button>
-              <div class="tinyCount" id="rowCount">0 rows</div>
+            <div class="card inner">
+              <h3>Photo Proof</h3>
+              <div class="subtle">Select an item to attach a photo from camera or files.</div>
+              <div class="photoBox">
+                <div id="photoPreview" class="photoPreview">No item selected.</div>
+              </div>
+              <label class="btn" id="btnPhotoPickLabel">
+                Add / Replace Photo
+                <input id="photoPick" type="file" accept="image/*" capture="environment" hidden />
+              </label>
+              <button class="btn ghost" id="btnRemovePhoto">Remove Photo</button>
+              <div class="subtle small" id="photoHelp">Photos are stored on this device only.</div>
             </div>
           </div>
+        </section>
 
-          <div class="row head">
-            <div>Day</div>
-            <div>Time</div>
-            <div>Park</div>
-            <div>Plan</div>
-            <div>Dining Type</div>
-            <div>Restaurant</div>
-            <div>Transport</div>
-            <div></div>
-          </div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
 
-          <div id="planRows"></div>
-        </div>
-
-        <!-- PACKING -->
-        <div class="tabpanel" id="tab-packing">
-          <div id="packRows" class="pack"></div>
-        </div>
-
-        <!-- NOTES -->
-        <div class="tabpanel" id="tab-notes">
-          <textarea id="notes" class="notes" placeholder="Write anything… snacks, must-dos, reminders, etc."></textarea>
-        </div>
-
-        <!-- ACTIVITIES -->
-        <div class="tabpanel" id="tab-activities">
-          <div class="subtabs">
-            <button class="subtab active" data-subtab="free">Free</button>
-            <button class="subtab" data-subtab="paid">Costs Money</button>
-          </div>
-
-          <div class="subpanel active" id="sub-free">
-            <p class="muted smallp">Check items you want, then click “Add to Itinerary”.</p>
-            <div id="freeActivities" class="activityList"></div>
-          </div>
-
-          <div class="subpanel" id="sub-paid">
-            <p class="muted smallp">Add an estimated cost (optional), then “Add to Itinerary”.</p>
-            <div id="paidActivities" class="activityList"></div>
-          </div>
-        </div>
-
-        <!-- MAPS -->
-        <div class="tabpanel" id="tab-maps">
-          <div class="mapGrid">
-            <div class="mapCard">
-              <h3>Magic Kingdom</h3>
-              <iframe class="mapFrame" loading="lazy"
-                src="https://www.google.com/maps?q=Magic%20Kingdom%20Park&output=embed"></iframe>
-            </div>
-
-            <div class="mapCard">
-              <h3>EPCOT</h3>
-              <iframe class="mapFrame" loading="lazy"
-                src="https://www.google.com/maps?q=EPCOT&output=embed"></iframe>
-            </div>
-
-            <div class="mapCard">
-              <h3>Hollywood Studios</h3>
-              <iframe class="mapFrame" loading="lazy"
-                src="https://www.google.com/maps?q=Disney%27s%20Hollywood%20Studios&output=embed"></iframe>
-            </div>
-
-            <div class="mapCard">
-              <h3>Animal Kingdom</h3>
-              <iframe class="mapFrame" loading="lazy"
-                src="https://www.google.com/maps?q=Disney%27s%20Animal%20Kingdom&output=embed"></iframe>
-            </div>
-
-            <div class="mapCard">
-              <h3>Disney Springs</h3>
-              <iframe class="mapFrame" loading="lazy"
-                src="https://www.google.com/maps?q=Disney%20Springs&output=embed"></iframe>
-            </div>
-          </div>
-        </div>
-
-        <!-- HIDDEN MICKEYS -->
-        <div class="tabpanel" id="tab-hidden">
-          <div class="hmTools">
-            <div class="tool">
-              <div class="toolLabel">Filter Park</div>
-              <select id="hmFilter"></select>
-            </div>
-            <div class="toolRight">
-              <button id="hmClear" class="btn ghost">Clear</button>
-              <div class="tinyCount" id="hmCount">0 found</div>
-            </div>
-          </div>
-
-          <div class="hmAdd">
-            <div class="hmAddTitle">Add your own Hidden Mickey (optional)</div>
-            <div class="hmAddGrid">
-              <select id="hmAddPark"></select>
-              <input id="hmAddArea" placeholder="Area (ex: Fantasyland)" />
-              <input id="hmAddHint" placeholder="Hint (your words)" />
-              <button id="hmAddBtn" class="btn ghost">+ Add</button>
-            </div>
-            <p class="muted smallp">Tip: The preloaded list is just examples. You can paste your full list later.</p>
-          </div>
-
-          <div id="hmList" class="hmList"></div>
-
-          <!-- hidden file input used for photo attach -->
-          <input id="hmPhotoInput" class="hidden" type="file" accept="image/*" capture="environment" />
-        </div>
-      </div>
-
-      <div class="footer" id="footerStatus">Loading…</div>
-    </section>
-  </main>
-
-  <script src="./app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

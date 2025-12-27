@@ -1,844 +1,1215 @@
-/* =========================
-   Vacation Planner (Magic Theme)
-   - Auto-save (localStorage)
-   - Itinerary + add days + filter park
-   - Activities (free/paid) checklist add-to-itinerary
-   - Dining database + add-to-itinerary
-   - Embedded maps
-   - Hidden Finds checklist + photo per item
-   - Export calendar (.ics) + backup JSON
-   ========================= */
+/* =========================================================
+  Vacation Planner (single-file JS)
+  - Auto-saves to localStorage
+  - Itinerary: park filter + add day + dining type -> restaurants
+  - Dining tab: per-park restaurant list + Add to itinerary
+  - Activities tab: free/paid + Add to itinerary
+  - Maps tab: embedded maps
+  - Hidden Finds: 82 items, checklist + editable + photo per item
+  - Calendar export: .ics file
+  - Backup export/import: JSON (your whole plan)
+========================================================= */
 
-const STORAGE_KEY = "vacationPlanner.v1";
+const STORAGE_KEY = "vacation_planner_v1";
 
-/* ---------- Seed Data (edit these to expand, safely) ---------- */
-
+// ---------- Data: Parks ----------
 const PARKS = [
   "Magic Kingdom",
   "EPCOT",
   "Hollywood Studios",
   "Animal Kingdom",
-  "Disney Springs",
-  "Resort Day"
+  "Disney Springs"
 ];
 
+// ---------- Data: Resorts (starter list; editable by you via HTML if needed) ----------
 const RESORTS = [
   "Select a resort…",
-  // Deluxe
-  "Grand Floridian Resort",
-  "Polynesian Village Resort",
-  "Contemporary Resort",
-  "Wilderness Lodge",
-  "Animal Kingdom Lodge",
-  "Beach Club Resort",
-  "Yacht Club Resort",
-  "BoardWalk Inn",
-  // Moderate
-  "Caribbean Beach Resort",
-  "Coronado Springs Resort",
-  "Port Orleans – French Quarter",
-  "Port Orleans – Riverside",
-  // Value
-  "Pop Century Resort",
-  "Art of Animation Resort",
-  "All-Star Movies Resort",
-  "All-Star Music Resort",
-  "All-Star Sports Resort",
-  // Other
-  "Off-Site Hotel"
+  "Disney's Contemporary Resort",
+  "Disney's Grand Floridian Resort & Spa",
+  "Disney's Polynesian Village Resort",
+  "Disney's Wilderness Lodge",
+  "Disney's Yacht Club Resort",
+  "Disney's Beach Club Resort",
+  "Disney's BoardWalk Inn",
+  "Disney's Riviera Resort",
+  "Disney's Coronado Springs Resort",
+  "Disney's Caribbean Beach Resort",
+  "Disney's Port Orleans Resort – Riverside",
+  "Disney's Port Orleans Resort – French Quarter",
+  "Disney's Saratoga Springs Resort & Spa",
+  "Disney's Old Key West Resort",
+  "Disney's Pop Century Resort",
+  "Disney's Art of Animation Resort",
+  "Disney's All-Star Movies Resort",
+  "Disney's All-Star Music Resort",
+  "Disney's All-Star Sports Resort",
+  "Other / Off-site"
 ];
 
-// Dining starter database (expand freely)
-const DINING_DB = {
-  quick: {
-    "Magic Kingdom": [
-      { name: "Columbia Harbour House", area: "Liberty Square" },
-      { name: "Pecos Bill Tall Tale Inn", area: "Frontierland" },
-      { name: "Cosmic Ray’s Starlight Café", area: "Tomorrowland" },
-      { name: "Casey’s Corner", area: "Main Street" },
-      { name: "Sleepy Hollow", area: "Liberty Square" }
+// ---------- Data: Dining (starter set, not “complete”; you can add in-app) ----------
+const DINING_SEED = {
+  "Magic Kingdom": {
+    quick: [
+      "Cosmic Ray’s Starlight Café",
+      "Columbia Harbour House",
+      "Casey’s Corner",
+      "Pecos Bill Tall Tale Inn & Café",
+      "Sleepy Hollow",
+      "Pinocchio Village Haus",
+      "The Friar’s Nook",
+      "Sunshine Tree Terrace",
+      "Gaston’s Tavern"
     ],
-    "EPCOT": [
-      { name: "Connections Eatery", area: "World Celebration" },
-      { name: "Sunshine Seasons", area: "The Land" },
-      { name: "Regal Eagle Smokehouse", area: "America Pavilion" },
-      { name: "Les Halles Boulangerie", area: "France" }
-    ],
-    "Hollywood Studios": [
-      { name: "Woody’s Lunch Box", area: "Toy Story Land" },
-      { name: "Docking Bay 7", area: "Galaxy’s Edge" },
-      { name: "ABC Commissary", area: "Commissary Lane" },
-      { name: "Backlot Express", area: "Echo Lake" }
-    ],
-    "Animal Kingdom": [
-      { name: "Satu’li Canteen", area: "Pandora" },
-      { name: "Flame Tree Barbecue", area: "Discovery Island" },
-      { name: "Harambe Market", area: "Africa" }
+    table: [
+      "Be Our Guest Restaurant",
+      "Cinderella’s Royal Table",
+      "The Crystal Palace",
+      "Skipper Canteen",
+      "Liberty Tree Tavern",
+      "Tony’s Town Square Restaurant",
+      "The Plaza Restaurant",
+      "Diamond Horseshoe"
     ]
   },
-  table: {
-    "Magic Kingdom": [
-      { name: "Skipper Canteen", area: "Adventureland" },
-      { name: "Liberty Tree Tavern", area: "Liberty Square" },
-      { name: "The Crystal Palace", area: "Main Street" },
-      { name: "Be Our Guest", area: "Fantasyland" }
+  "EPCOT": {
+    quick: [
+      "Sunshine Seasons",
+      "Connections Eatery",
+      "Regal Eagle Smokehouse",
+      "Les Halles Boulangerie-Patisserie",
+      "Katsura Grill",
+      "La Cantina de San Angel",
+      "Sommerfest",
+      "Yorkshire County Fish Shop"
     ],
-    "EPCOT": [
-      { name: "Via Napoli", area: "Italy" },
-      { name: "Le Cellier Steakhouse", area: "Canada" },
-      { name: "San Angel Inn", area: "Mexico" },
-      { name: "Chefs de France", area: "France" }
+    table: [
+      "Space 220 Restaurant",
+      "Le Cellier Steakhouse",
+      "Akershus Royal Banquet Hall",
+      "San Angel Inn Restaurante",
+      "Biergarten Restaurant",
+      "Garden Grill Restaurant",
+      "Rose & Crown Dining Room",
+      "Coral Reef Restaurant"
+    ]
+  },
+  "Hollywood Studios": {
+    quick: [
+      "Docking Bay 7 Food and Cargo",
+      "Ronto Roasters",
+      "ABC Commissary",
+      "Backlot Express",
+      "Woody’s Lunch Box",
+      "PizzeRizzo",
+      "The Trolley Car Café",
+      "Rosie’s All-American Café"
     ],
-    "Hollywood Studios": [
-      { name: "Sci-Fi Dine-In Theater", area: "Commissary Lane" },
-      { name: "50’s Prime Time Café", area: "Echo Lake" },
-      { name: "Hollywood Brown Derby", area: "Hollywood Blvd" }
+    table: [
+      "Sci-Fi Dine-In Theater Restaurant",
+      "50’s Prime Time Café",
+      "The Hollywood Brown Derby",
+      "Roundup Rodeo BBQ",
+      "Mama Melrose’s Ristorante Italiano"
+    ]
+  },
+  "Animal Kingdom": {
+    quick: [
+      "Satu’li Canteen",
+      "Flame Tree Barbecue",
+      "Harambe Market",
+      "Yak & Yeti Local Food Cafes",
+      "Restaurantosaurus",
+      "Eight Spoon Café"
     ],
-    "Animal Kingdom": [
-      { name: "Yak & Yeti Restaurant", area: "Asia" },
-      { name: "Tiffins", area: "Discovery Island" }
+    table: [
+      "Tiffins Restaurant",
+      "Yak & Yeti Restaurant",
+      "Tusker House Restaurant",
+      "Rainforest Cafe (AK)"
+    ]
+  },
+  "Disney Springs": {
+    quick: [
+      "D-Luxe Burger",
+      "Chicken Guy!",
+      "Earl of Sandwich",
+      "Blaze Fast-Fire’d Pizza",
+      "The Polite Pig (counter)",
+      "Cookes of Dublin"
+    ],
+    table: [
+      "The Boathouse",
+      "Wine Bar George",
+      "Homecomin’",
+      "Raglan Road Irish Pub",
+      "Jaleo",
+      "Morimoto Asia",
+      "STK Steakhouse"
     ]
   }
 };
 
-// Activities (not deletable). Add more anytime.
-const SEED_ACTIVITIES = {
+// ---------- Data: Activities ----------
+const ACTIVITIES_SEED = {
   free: [
-    { title: "Resort pool time / splash pad", park: "Resort Day", cost: 0 },
-    { title: "Character sightings (no reservation)", park: "Magic Kingdom", cost: 0 },
-    { title: "Street performances / atmosphere", park: "EPCOT", cost: 0 },
-    { title: "Fireworks viewing spot (arrive early)", park: "Magic Kingdom", cost: 0 },
-    { title: "Photo challenges (family poses)", park: "Hollywood Studios", cost: 0 },
-    { title: "Animal trails & exhibits", park: "Animal Kingdom", cost: 0 }
+    { park:"Magic Kingdom", title:"Main Street window shopping", note:"Browse, take photos, soak in the vibes", cost:0 },
+    { park:"Magic Kingdom", title:"Castle photos at golden hour", note:"Try sunset + night shots", cost:0 },
+    { park:"EPCOT", title:"World Showcase stroll", note:"Explore pavilions + street performers", cost:0 },
+    { park:"Hollywood Studios", title:"Character sightings (look for pop-ups)", note:"Check the app day-of", cost:0 },
+    { park:"Animal Kingdom", title:"Animal trails walk", note:"Great mid-day break", cost:0 },
+    { park:"Disney Springs", title:"Live music wander", note:"Evenings often have entertainment", cost:0 },
+    { park:"EPCOT", title:"Kidcot-style country stamps (when available)", note:"Fun for kids", cost:0 },
+    { park:"Magic Kingdom", title:"Parade viewing spot hunt", note:"Pick your best curb spot early", cost:0 }
   ],
   paid: [
-    { title: "Special dessert / treat budget", park: "Magic Kingdom", cost: 25 },
-    { title: "Souvenir budget (ears / shirts)", park: "Disney Springs", cost: 60 },
-    { title: "Table-service meal (estimate)", park: "EPCOT", cost: 160 },
-    { title: "Mini-golf (estimate)", park: "Resort Day", cost: 80 }
+    { park:"Magic Kingdom", title:"Souvenir budget stop", note:"Pick one 'must-have' souvenir", cost:25 },
+    { park:"EPCOT", title:"Snack crawl", note:"Choose 3–5 snacks to try", cost:45 },
+    { park:"Hollywood Studios", title:"PhotoPass moments", note:"Capture a few posed shots", cost:0 },
+    { park:"Animal Kingdom", title:"Specialty drink / treat", note:"One mid-day treat", cost:15 },
+    { park:"Disney Springs", title:"Dinner + dessert", note:"Plan a sit-down meal", cost:70 },
+    { park:"EPCOT", title:"Festival booth tasting (if running)", note:"3–6 booths", cost:60 }
   ]
 };
 
-// “Hidden Finds” (your checklist idea). Add many more here safely.
-// NOTE: Avoid official branding assets; this is a generic “hidden-shape scavenger list”.
-const SEED_HIDDEN_FINDS = [
-  { park: "Magic Kingdom", location: "Adventureland walkway", hint: "Look near patterned stonework along the main path." },
-  { park: "Magic Kingdom", location: "Haunted ride exit area", hint: "Check decorative molding for a three-circle silhouette." },
-  { park: "EPCOT", location: "Near a fountain plaza", hint: "Look for circles hidden inside tile patterns." },
-  { park: "Hollywood Studios", location: "Sci-fi themed queue", hint: "A screen graphic may hide a familiar three-circle shape." },
-  { park: "Animal Kingdom", location: "Tree carvings area", hint: "Sometimes the shape appears in clusters of circles." },
-  { park: "Disney Springs", location: "Outdoor walkway near murals", hint: "Scan repeating art patterns for three-circle groupings." }
-];
+// ---------- Data: Hidden Finds (82 items; editable) ----------
+function buildHiddenFindsSeed() {
+  // 82 total: 17 MK, 17 EPCOT, 16 HS, 16 AK, 16 DS = 82
+  const packs = [
+    { park:"Magic Kingdom", count:17 },
+    { park:"EPCOT", count:17 },
+    { park:"Hollywood Studios", count:16 },
+    { park:"Animal Kingdom", count:16 },
+    { park:"Disney Springs", count:16 },
+  ];
 
-// Embedded maps (uses Google Maps embed links; safe and easy)
+  const baseHints = [
+    "Look near patterned stonework along the main path.",
+    "Check decorative molding for a three-circle silhouette.",
+    "Scan floor tiles for subtle circle groupings.",
+    "Look near queue details and themed props.",
+    "Check railings and carved textures near entrances.",
+    "Look for circle shapes hidden in signage or graphics.",
+    "Check near fountains, planters, or themed murals.",
+    "Look for a three-circle shape in shadows or trim.",
+  ];
+
+  const items = [];
+  let id = 1;
+  for (const p of packs) {
+    for (let i=1; i<=p.count; i++){
+      const hint = baseHints[(id-1) % baseHints.length];
+      items.push({
+        id: String(id),
+        park: p.park,
+        title: `${p.park}: Hidden Find #${i}`,
+        hint: hint,
+        status: "not_found",
+        checked: false,
+        photoDataUrl: "" // stored as base64 when user uploads
+      });
+      id++;
+    }
+  }
+  return items;
+}
+
+// ---------- Maps (embedded iframes) ----------
 const MAPS = [
-  {
-    title: "Magic Kingdom",
-    embed: "https://www.google.com/maps?q=Magic%20Kingdom%20Park&output=embed",
-    open: "https://www.google.com/maps?q=Magic%20Kingdom%20Park"
-  },
-  {
-    title: "EPCOT",
-    embed: "https://www.google.com/maps?q=EPCOT&output=embed",
-    open: "https://www.google.com/maps?q=EPCOT"
-  },
-  {
-    title: "Hollywood Studios",
-    embed: "https://www.google.com/maps?q=Disney%27s%20Hollywood%20Studios&output=embed",
-    open: "https://www.google.com/maps?q=Disney%27s%20Hollywood%20Studios"
-  },
-  {
-    title: "Animal Kingdom",
-    embed: "https://www.google.com/maps?q=Disney%27s%20Animal%20Kingdom&output=embed",
-    open: "https://www.google.com/maps?q=Disney%27s%20Animal%20Kingdom"
-  },
-  {
-    title: "Disney Springs",
-    embed: "https://www.google.com/maps?q=Disney%20Springs&output=embed",
-    open: "https://www.google.com/maps?q=Disney%20Springs"
-  }
+  { name:"Magic Kingdom", src:"https://www.google.com/maps?q=Magic%20Kingdom%20Park%20Orlando%20FL&output=embed" },
+  { name:"EPCOT", src:"https://www.google.com/maps?q=EPCOT%20Orlando%20FL&output=embed" },
+  { name:"Hollywood Studios", src:"https://www.google.com/maps?q=Disney's%20Hollywood%20Studios%20Orlando%20FL&output=embed" },
+  { name:"Animal Kingdom", src:"https://www.google.com/maps?q=Disney's%20Animal%20Kingdom%20Orlando%20FL&output=embed" },
+  { name:"Disney Springs", src:"https://www.google.com/maps?q=Disney%20Springs%20Orlando%20FL&output=embed" },
 ];
 
-/* ---------- Helpers ---------- */
-
-const $ = (id) => document.getElementById(id);
-const fmtMoney = (n) => {
-  const v = Number(n || 0);
-  return v.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-};
-const uid = () => Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
-const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-
-function toast(msg) {
-  const el = $("toast");
-  el.textContent = msg;
-  el.style.opacity = "1";
-  setTimeout(() => (el.style.opacity = "0"), 2200);
+// ---------- Default state ----------
+function defaultState(){
+  return {
+    trip: {
+      name: "Family Vacation",
+      startDate: "",
+      endDate: "",
+      resort: "Select a resort…",
+      partySize: 4,
+      budget: 2500,
+      welcomeMessage: "Welcome! Let’s plan your trip ✨"
+    },
+    itinerary: [
+      // a couple starter rows
+      makeItineraryRow(1, "08:00", "Magic Kingdom", "Rope drop + first rides", "none", "", 0),
+      makeItineraryRow(1, "12:30", "Magic Kingdom", "Lunch break", "quick", "Cosmic Ray’s Starlight Café", 0),
+      makeItineraryRow(1, "18:00", "Magic Kingdom", "Dinner", "table", "Skipper Canteen", 0),
+    ],
+    packing: [
+      { id: uid(), text:"Ponchos", checked:false },
+      { id: uid(), text:"Sunscreen", checked:false },
+      { id: uid(), text:"Portable charger", checked:false },
+    ],
+    notes: "",
+    activities: {
+      freeChecked: {},
+      paidChecked: {}
+    },
+    diningCustom: [], // {park,type,name}
+    hiddenFinds: buildHiddenFindsSeed(),
+    ui: {
+      activeTab: "itinerary",
+      activitiesSubtab: "free"
+    }
+  };
 }
 
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  $("saveStatus").textContent = "Saved on this device.";
+function makeItineraryRow(day, time, park, plan, diningType, restaurant, cost){
+  return {
+    id: uid(),
+    day: day,           // numeric day index (1..)
+    time: time,         // "HH:MM"
+    park: park,
+    plan: plan,
+    diningType: diningType, // "none" | "quick" | "table"
+    restaurant: restaurant,
+    cost: Number(cost || 0)
+  };
 }
 
-function load() {
-  try {
+function uid(){
+  return Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
+// ---------- Load/Save ----------
+function loadState(){
+  try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+
+    // If seeds were missing, patch them:
+    parsed.hiddenFinds = parsed.hiddenFinds && parsed.hiddenFinds.length ? parsed.hiddenFinds : buildHiddenFindsSeed();
+    parsed.diningCustom = parsed.diningCustom || [];
+    parsed.itinerary = parsed.itinerary || [];
+    parsed.packing = parsed.packing || [];
+    parsed.trip = parsed.trip || defaultState().trip;
+    parsed.ui = parsed.ui || defaultState().ui;
+    parsed.activities = parsed.activities || defaultState().activities;
+
+    return parsed;
+  }catch{
+    return defaultState();
   }
 }
-
-/* ---------- State ---------- */
-
-let state = load() || {
-  trip: {
-    name: "Family Vacation",
-    startDate: "",
-    endDate: "",
-    resort: RESORTS[0],
-    partySize: 4,
-    budget: 2500,
-    welcomeMsg: "Welcome! Let’s plan your trip ✨"
-  },
-  filterPark: "",
-  days: [
-    { id: uid(), label: "Day 1", park: "Magic Kingdom" },
-    { id: uid(), label: "Day 2", park: "EPCOT" }
-  ],
-  itinerary: [
-    { id: uid(), dayId: null, time: "08:00", park: "Magic Kingdom", plan: "Rope drop + photos", dining: "", cost: 0 },
-    { id: uid(), dayId: null, time: "12:30", park: "Magic Kingdom", plan: "Lunch plan", dining: "Quick Service", cost: 0 }
-  ],
-  packing: [],
-  notes: "",
-  activities: {
-    free: SEED_ACTIVITIES.free.map(a => ({ id: uid(), ...a })),
-    paid: SEED_ACTIVITIES.paid.map(a => ({ id: uid(), ...a }))
-  },
-  hiddenFinds: SEED_HIDDEN_FINDS.map(h => ({ id: uid(), ...h, found: false, photo: "" })),
-  ui: {
-    tab: "itinerary",
-    activitySeg: "free",
-    selectedActivityId: "",
-    selectedDiningKey: "",
-    selectedHiddenId: ""
-  }
-};
-
-// attach dayId for initial items if missing
-(function fixInitialDayIds() {
-  const firstDay = state.days[0]?.id || null;
-  state.itinerary = state.itinerary.map((it, i) => ({
-    ...it,
-    dayId: it.dayId || firstDay
-  }));
-})();
-
-/* ---------- DOM Fillers ---------- */
-
-function fillSelect(el, options, { includeAll = false, allLabel = "All Parks" } = {}) {
-  el.innerHTML = "";
-  if (includeAll) {
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.textContent = allLabel;
-    el.appendChild(opt);
-  }
-  for (const o of options) {
-    const opt = document.createElement("option");
-    opt.value = o.value ?? o;
-    opt.textContent = o.label ?? o;
-    el.appendChild(opt);
-  }
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function dayLabel(dayId) {
-  return state.days.find(d => d.id === dayId)?.label || "Day";
-}
+// ---------- DOM ----------
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-/* ---------- Rendering ---------- */
+let state = loadState();
 
-function renderTrip() {
-  $("tripName").value = state.trip.name;
-  $("startDate").value = state.trip.startDate;
-  $("endDate").value = state.trip.endDate;
-  $("partySize").value = state.trip.partySize;
-  $("budget").value = state.trip.budget;
-  $("welcomeMsg").value = state.trip.welcomeMsg;
+// ---------- Init ----------
+document.addEventListener("DOMContentLoaded", () => {
+  bindTabs();
+  initSnapshot();
+  initDropdowns();
+  renderAll();
+  bindTopActions();
+  startSparkles();
+});
 
-  // hero
-  $("heroWelcome").textContent = state.trip.welcomeMsg?.trim() || "Welcome! ✨";
-  $("heroDates").textContent = `Dates: ${state.trip.startDate || "—"} → ${state.trip.endDate || "—"}`;
-  $("heroResort").textContent = `Resort: ${state.trip.resort && state.trip.resort !== "Select a resort…" ? state.trip.resort : "—"}`;
-  $("heroParty").textContent = `Party: ${state.trip.partySize || "—"}`;
-
-  // stats
-  const items = state.itinerary.length;
-  const cost = state.itinerary.reduce((s, x) => s + Number(x.cost || 0), 0);
-  const budget = Number(state.trip.budget || 0);
-  const left = budget - cost;
-
-  $("statItems").textContent = String(items);
-  $("statCost").textContent = fmtMoney(cost);
-  $("statLeft").textContent = fmtMoney(left);
-}
-
-function renderItinerary() {
-  const body = $("itineraryBody");
-  body.innerHTML = "";
-
-  const rows = state.itinerary
-    .filter(it => !state.filterPark || it.park === state.filterPark)
-    .map(it => {
-      const tr = document.createElement("tr");
-
-      // Day
-      const tdDay = document.createElement("td");
-      const selDay = document.createElement("select");
-      fillSelect(selDay, state.days.map(d => ({ value: d.id, label: `${d.label} (${d.park})` })));
-      selDay.value = it.dayId || state.days[0]?.id || "";
-      selDay.addEventListener("change", () => {
-        it.dayId = selDay.value;
-        save();
-        renderAll();
-      });
-      tdDay.appendChild(selDay);
-
-      // Time
-      const tdTime = document.createElement("td");
-      const inpTime = document.createElement("input");
-      inpTime.type = "time";
-      inpTime.value = it.time || "08:00";
-      inpTime.addEventListener("change", () => {
-        it.time = inpTime.value;
-        save();
-      });
-      tdTime.appendChild(inpTime);
-
-      // Park
-      const tdPark = document.createElement("td");
-      const selPark = document.createElement("select");
-      fillSelect(selPark, PARKS);
-      selPark.value = it.park || "Magic Kingdom";
-      selPark.addEventListener("change", () => {
-        it.park = selPark.value;
-        save();
-        renderAll();
-      });
-      tdPark.appendChild(selPark);
-
-      // Plan
-      const tdPlan = document.createElement("td");
-      const inpPlan = document.createElement("input");
-      inpPlan.type = "text";
-      inpPlan.value = it.plan || "";
-      inpPlan.placeholder = "What are you doing?";
-      inpPlan.addEventListener("input", () => {
-        it.plan = inpPlan.value;
-        save();
-      });
-      tdPlan.appendChild(inpPlan);
-
-      // Dining
-      const tdDining = document.createElement("td");
-      const selDining = document.createElement("select");
-      fillSelect(selDining, [
-        { value: "", label: "—" },
-        { value: "Quick Service", label: "Quick Service" },
-        { value: "Table Service", label: "Table Service" },
-        { value: "Snack", label: "Snack / Treat" }
-      ]);
-      selDining.value = it.dining || "";
-      selDining.addEventListener("change", () => {
-        it.dining = selDining.value;
-        save();
-      });
-      tdDining.appendChild(selDining);
-
-      // Cost
-      const tdCost = document.createElement("td");
-      const inpCost = document.createElement("input");
-      inpCost.type = "number";
-      inpCost.min = "0";
-      inpCost.step = "1";
-      inpCost.value = Number(it.cost || 0);
-      inpCost.addEventListener("change", () => {
-        it.cost = clamp(Number(inpCost.value || 0), 0, 999999);
-        save();
-        renderTrip();
-      });
-      tdCost.appendChild(inpCost);
-
-      // Actions
-      const tdAct = document.createElement("td");
-      tdAct.className = "cellActions";
-      const btnDup = document.createElement("button");
-      btnDup.className = "iconBtn";
-      btnDup.textContent = "Duplicate";
-      btnDup.addEventListener("click", () => {
-        state.itinerary.push({ ...it, id: uid() });
-        save();
-        renderAll();
-        toast("Duplicated.");
-      });
-
-      const btnDel = document.createElement("button");
-      btnDel.className = "iconBtn danger";
-      btnDel.textContent = "Delete";
-      btnDel.addEventListener("click", () => {
-        state.itinerary = state.itinerary.filter(x => x.id !== it.id);
-        save();
-        renderAll();
-        toast("Deleted.");
-      });
-
-      tdAct.appendChild(btnDup);
-      tdAct.appendChild(btnDel);
-
-      tr.appendChild(tdDay);
-      tr.appendChild(tdTime);
-      tr.appendChild(tdPark);
-      tr.appendChild(tdPlan);
-      tr.appendChild(tdDining);
-      tr.appendChild(tdCost);
-      tr.appendChild(tdAct);
-
-      return tr;
+// ---------- Tabs ----------
+function bindTabs(){
+  $$(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setActiveTab(btn.dataset.tab);
     });
+  });
 
-  for (const tr of rows) body.appendChild(tr);
+  $$(".subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.ui.activitiesSubtab = btn.dataset.subtab;
+      saveState();
+      renderActivities();
+      $$(".subtab").forEach(b => b.classList.toggle("active", b.dataset.subtab === state.ui.activitiesSubtab));
+    });
+  });
+}
+function setActiveTab(tabName){
+  state.ui.activeTab = tabName;
+  saveState();
+  $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
+  $$(".tabPanel").forEach(p => p.classList.toggle("active", p.id === `tab-${tabName}`));
+  // Re-render when switching if needed
+  if(tabName === "maps") renderMaps();
+  if(tabName === "dining") renderDining();
+  if(tabName === "activities") renderActivities();
+  if(tabName === "hidden") renderHiddenFinds();
 }
 
-function renderPacking() {
-  const list = $("packList");
+// ---------- Snapshot ----------
+function initSnapshot(){
+  $("#tripName").addEventListener("input", e => { state.trip.name = e.target.value; syncHero(); saveState(); });
+  $("#startDate").addEventListener("input", e => { state.trip.startDate = e.target.value; syncHero(); saveState(); });
+  $("#endDate").addEventListener("input", e => { state.trip.endDate = e.target.value; syncHero(); saveState(); });
+  $("#resortSelect").addEventListener("change", e => { state.trip.resort = e.target.value; syncHero(); saveState(); });
+  $("#partySize").addEventListener("input", e => { state.trip.partySize = Number(e.target.value || 1); syncHero(); saveState(); });
+  $("#budget").addEventListener("input", e => { state.trip.budget = Number(e.target.value || 0); renderBudget(); saveState(); });
+  $("#welcomeMessage").addEventListener("input", e => { state.trip.welcomeMessage = e.target.value; syncHero(); saveState(); });
+}
+
+// ---------- Dropdowns ----------
+function initDropdowns(){
+  // Resort select
+  const resort = $("#resortSelect");
+  resort.innerHTML = "";
+  RESORTS.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = r;
+    resort.appendChild(opt);
+  });
+
+  // Itinerary filter park + add day park
+  fillParkSelect($("#itFilterPark"), true);
+  fillParkSelect($("#addDayPark"), false);
+  fillParkSelect($("#actParkFilter"), true);
+  fillParkSelect($("#dinPark"), false);
+  fillParkSelect($("#customRestaurantPark"), false);
+  fillParkSelect($("#hmPark"), true);
+
+  $("#itFilterPark").addEventListener("change", () => renderItinerary());
+  $("#btnClearParkFilter").addEventListener("click", () => {
+    $("#itFilterPark").value = "";
+    renderItinerary();
+  });
+
+  $("#btnAddDay").addEventListener("click", () => {
+    const park = $("#addDayPark").value || "Magic Kingdom";
+    const nextDay = getNextDayNumber();
+    // Add a row at 08:00 for that park
+    state.itinerary.push(makeItineraryRow(nextDay, "08:00", park, "", "none", "", 0));
+    saveState();
+    renderItinerary();
+    renderBudget();
+  });
+
+  $("#btnAddRow").addEventListener("click", () => {
+    const nextDay = getNextDayNumber();
+    state.itinerary.push(makeItineraryRow(nextDay, "12:00", "Magic Kingdom", "", "none", "", 0));
+    saveState();
+    renderItinerary();
+  });
+
+  // Notes
+  $("#notesText").addEventListener("input", e => {
+    state.notes = e.target.value;
+    saveState();
+  });
+
+  // Packing
+  $("#btnPackingAdd").addEventListener("click", () => {
+    const val = $("#packingNew").value.trim();
+    if(!val) return;
+    state.packing.push({ id: uid(), text: val, checked:false });
+    $("#packingNew").value = "";
+    saveState();
+    renderPacking();
+  });
+  $("#packingNew").addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      $("#btnPackingAdd").click();
+    }
+  });
+
+  // Activities filters
+  $("#actParkFilter").addEventListener("change", renderActivities);
+  $("#actSearch").addEventListener("input", renderActivities);
+
+  // Dining filters
+  $("#dinPark").addEventListener("change", renderDining);
+  $("#dinType").addEventListener("change", renderDining);
+  $("#dinSearch").addEventListener("input", renderDining);
+
+  // Add custom restaurant
+  $("#btnAddCustomRestaurant").addEventListener("click", () => {
+    const name = $("#customRestaurantName").value.trim();
+    const park = $("#customRestaurantPark").value;
+    const type = $("#customRestaurantType").value;
+    if(!name || !park || !type) return;
+
+    state.diningCustom.push({ id: uid(), name, park, type });
+    $("#customRestaurantName").value = "";
+    saveState();
+    renderDining();
+    renderItinerary(); // so dropdowns refresh
+  });
+
+  // Hidden finds filters
+  $("#hmPark").addEventListener("change", renderHiddenFinds);
+  $("#hmSearch").addEventListener("input", renderHiddenFinds);
+
+  // Hidden find detail bindings
+  $("#hmTitle").addEventListener("input", () => updateSelectedHiddenField("title", $("#hmTitle").value));
+  $("#hmHint").addEventListener("input", () => updateSelectedHiddenField("hint", $("#hmHint").value));
+  $("#hmStatus").addEventListener("change", () => updateSelectedHiddenField("status", $("#hmStatus").value));
+  $("#hmChecked").addEventListener("change", () => updateSelectedHiddenField("checked", $("#hmChecked").checked));
+
+  $("#hmPhoto").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const dataUrl = await fileToDataUrl(file);
+    updateSelectedHiddenField("photoDataUrl", dataUrl);
+    e.target.value = "";
+  });
+
+  $("#btnRemoveHmPhoto").addEventListener("click", () => {
+    updateSelectedHiddenField("photoDataUrl", "");
+  });
+}
+
+function fillParkSelect(selectEl, includeAll){
+  selectEl.innerHTML = "";
+  if(includeAll){
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "All Parks";
+    selectEl.appendChild(optAll);
+  }
+  for(const p of PARKS){
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    selectEl.appendChild(opt);
+  }
+}
+
+// ---------- Render all ----------
+function renderAll(){
+  // restore UI tab
+  setActiveTab(state.ui.activeTab || "itinerary");
+  $$(".subtab").forEach(b => b.classList.toggle("active", b.dataset.subtab === (state.ui.activitiesSubtab || "free")));
+
+  // load snapshot fields
+  $("#tripName").value = state.trip.name || "";
+  $("#startDate").value = state.trip.startDate || "";
+  $("#endDate").value = state.trip.endDate || "";
+  $("#resortSelect").value = state.trip.resort || "Select a resort…";
+  $("#partySize").value = state.trip.partySize ?? 4;
+  $("#budget").value = state.trip.budget ?? 0;
+  $("#welcomeMessage").value = state.trip.welcomeMessage || "";
+
+  $("#notesText").value = state.notes || "";
+
+  syncHero();
+  renderItinerary();
+  renderPacking();
+  renderActivities();
+  renderDining();
+  renderMaps();
+  renderHiddenFinds();
+  renderBudget();
+}
+
+// ---------- Hero sync ----------
+function syncHero(){
+  $("#heroWelcome").textContent = (state.trip.welcomeMessage || "Welcome! ✨");
+  const dates = formatDateRange(state.trip.startDate, state.trip.endDate);
+  $("#pillDates").textContent = `Dates: ${dates}`;
+  $("#pillResort").textContent = `Resort: ${state.trip.resort || "—"}`;
+  $("#pillParty").textContent = `Party: ${state.trip.partySize || "—"}`;
+
+  $("#statDates").textContent = dates;
+  $("#statResort").textContent = state.trip.resort || "—";
+  $("#statParty").textContent = String(state.trip.partySize || "—");
+
+  $("#pillDates").title = "Start → End";
+  $("#pillResort").title = "Your resort/hotel";
+  $("#pillParty").title = "Party size";
+}
+
+function formatDateRange(start, end){
+  if(!start && !end) return "—";
+  if(start && !end) return start;
+  if(!start && end) return end;
+  return `${start} → ${end}`;
+}
+
+// ---------- Itinerary ----------
+function renderItinerary(){
+  const tbody = $("#itineraryBody");
+  tbody.innerHTML = "";
+
+  const filterPark = $("#itFilterPark").value || "";
+
+  const rows = [...state.itinerary].sort((a,b) => {
+    if(a.day !== b.day) return a.day - b.day;
+    return (a.time || "").localeCompare(b.time || "");
+  }).filter(r => {
+    if(!filterPark) return true;
+    return r.park === filterPark;
+  });
+
+  for(const row of rows){
+    const tr = document.createElement("tr");
+
+    // Day
+    tr.appendChild(tdInputNumber(row, "day", 1, 50, (val)=>{
+      row.day = Number(val||1);
+      saveState();
+      renderBudget();
+    }));
+
+    // Time
+    tr.appendChild(tdTime(row));
+
+    // Park
+    tr.appendChild(tdParkSelect(row));
+
+    // Plan
+    tr.appendChild(tdTextInput(row, "plan", "What are you doing?"));
+
+    // Dining Type
+    tr.appendChild(tdDiningType(row));
+
+    // Restaurant (depends on park + dining type)
+    tr.appendChild(tdRestaurant(row));
+
+    // Cost
+    tr.appendChild(tdCost(row));
+
+    // Actions
+    const tdActions = document.createElement("td");
+    tdActions.className = "colActions";
+    const del = document.createElement("button");
+    del.className = "iconBtn danger";
+    del.textContent = "✕";
+    del.title = "Delete row";
+    del.addEventListener("click", () => {
+      state.itinerary = state.itinerary.filter(r => r.id !== row.id);
+      saveState();
+      renderItinerary();
+      renderBudget();
+    });
+    tdActions.appendChild(del);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  }
+
+  renderBudget();
+}
+
+function tdInputNumber(row, key, min, max, onChange){
+  const td = document.createElement("td");
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = String(min);
+  input.max = String(max);
+  input.value = String(row[key] ?? min);
+  input.addEventListener("input", () => {
+    row[key] = Number(input.value || min);
+    saveState();
+    onChange?.(input.value);
+  });
+  td.appendChild(input);
+  return td;
+}
+
+function tdTime(row){
+  const td = document.createElement("td");
+  const input = document.createElement("input");
+  input.type = "time";
+  input.value = row.time || "08:00";
+  input.addEventListener("input", () => {
+    row.time = input.value || "08:00";
+    saveState();
+  });
+  td.appendChild(input);
+  return td;
+}
+
+function tdParkSelect(row){
+  const td = document.createElement("td");
+  const sel = document.createElement("select");
+  for(const p of PARKS){
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    sel.appendChild(opt);
+  }
+  sel.value = row.park || "Magic Kingdom";
+  sel.addEventListener("change", () => {
+    row.park = sel.value;
+    // If dining type selected, ensure restaurant is valid
+    if(row.diningType === "quick" || row.diningType === "table"){
+      const options = getRestaurantsFor(row.park, row.diningType);
+      if(!options.includes(row.restaurant)){
+        row.restaurant = options[0] || "";
+      }
+    } else {
+      row.restaurant = "";
+    }
+    saveState();
+    renderItinerary();
+  });
+  td.appendChild(sel);
+  return td;
+}
+
+function tdTextInput(row, key, placeholder){
+  const td = document.createElement("td");
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = row[key] || "";
+  input.placeholder = placeholder || "";
+  input.addEventListener("input", () => {
+    row[key] = input.value;
+    saveState();
+  });
+  td.appendChild(input);
+  return td;
+}
+
+function tdDiningType(row){
+  const td = document.createElement("td");
+  const sel = document.createElement("select");
+  const opts = [
+    { v:"none", t:"—" },
+    { v:"quick", t:"Quick Service" },
+    { v:"table", t:"Table Service" },
+  ];
+  for(const o of opts){
+    const opt = document.createElement("option");
+    opt.value = o.v;
+    opt.textContent = o.t;
+    sel.appendChild(opt);
+  }
+  sel.value = row.diningType || "none";
+  sel.addEventListener("change", () => {
+    row.diningType = sel.value;
+    if(row.diningType === "none"){
+      row.restaurant = "";
+    }else{
+      const list = getRestaurantsFor(row.park, row.diningType);
+      if(!list.includes(row.restaurant)){
+        row.restaurant = list[0] || "";
+      }
+    }
+    saveState();
+    renderItinerary();
+  });
+  td.appendChild(sel);
+  return td;
+}
+
+function tdRestaurant(row){
+  const td = document.createElement("td");
+  if(row.diningType !== "quick" && row.diningType !== "table"){
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = "";
+    input.placeholder = "Select dining type first";
+    input.disabled = true;
+    td.appendChild(input);
+    return td;
+  }
+
+  const sel = document.createElement("select");
+  const options = getRestaurantsFor(row.park, row.diningType);
+  // Add "Custom..." option at end
+  options.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  const optCustom = document.createElement("option");
+  optCustom.value = "__custom__";
+  optCustom.textContent = "Other (type it)…";
+  sel.appendChild(optCustom);
+
+  // If current restaurant not in list and exists, show custom mode
+  if(row.restaurant && !options.includes(row.restaurant)){
+    sel.value = "__custom__";
+  } else {
+    sel.value = row.restaurant || (options[0] || "");
+  }
+
+  const customInput = document.createElement("input");
+  customInput.type = "text";
+  customInput.placeholder = "Type restaurant name…";
+  customInput.value = row.restaurant && !options.includes(row.restaurant) ? row.restaurant : "";
+  customInput.style.display = (sel.value === "__custom__") ? "block" : "none";
+
+  sel.addEventListener("change", () => {
+    if(sel.value === "__custom__"){
+      customInput.style.display = "block";
+      row.restaurant = customInput.value || "";
+    } else {
+      customInput.style.display = "none";
+      row.restaurant = sel.value;
+    }
+    saveState();
+  });
+
+  customInput.addEventListener("input", () => {
+    row.restaurant = customInput.value;
+    saveState();
+  });
+
+  td.appendChild(sel);
+  td.appendChild(customInput);
+  return td;
+}
+
+function tdCost(row){
+  const td = document.createElement("td");
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "0";
+  input.step = "1";
+  input.value = String(row.cost ?? 0);
+  input.addEventListener("input", () => {
+    row.cost = Number(input.value || 0);
+    saveState();
+    renderBudget();
+  });
+  td.appendChild(input);
+  return td;
+}
+
+function getNextDayNumber(){
+  const maxDay = state.itinerary.reduce((m,r)=>Math.max(m, Number(r.day||1)), 1);
+  return maxDay + 1;
+}
+
+// ---------- Budget ----------
+function renderBudget(){
+  const used = state.itinerary.reduce((sum,r)=>sum + (Number(r.cost)||0), 0);
+  const budget = Number(state.trip.budget || 0);
+  const pct = budget > 0 ? Math.min(100, Math.round((used / budget) * 100)) : 0;
+
+  $("#budgetText").textContent = `$${used.toFixed(0)} used${budget ? ` of $${budget.toFixed(0)}` : ""}`;
+  $("#budgetFill").style.width = `${pct}%`;
+}
+
+// ---------- Packing ----------
+function renderPacking(){
+  const list = $("#packingList");
   list.innerHTML = "";
-  for (const item of state.packing) {
+  for(const item of state.packing){
     const row = document.createElement("div");
-    row.className = "checkItem";
+    row.className = "listItem";
 
     const left = document.createElement("div");
-    left.className = "checkLeft";
+    left.className = "listLeft";
+
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.checked = !!item.done;
+    cb.className = "check";
+    cb.checked = !!item.checked;
     cb.addEventListener("change", () => {
-      item.done = cb.checked;
-      save();
+      item.checked = cb.checked;
+      saveState();
     });
+
     const text = document.createElement("div");
-    const t1 = document.createElement("div");
-    t1.className = "checkText";
-    t1.textContent = item.text;
-    const t2 = document.createElement("div");
-    t2.className = "checkSub";
-    t2.textContent = item.done ? "Packed" : "Not packed";
-    text.appendChild(t1);
-    text.appendChild(t2);
+    const title = document.createElement("div");
+    title.className = "listTitle";
+    title.textContent = item.text;
+    text.appendChild(title);
 
     left.appendChild(cb);
     left.appendChild(text);
 
     const right = document.createElement("div");
-    right.className = "checkRight";
+    right.className = "listRight";
+
     const del = document.createElement("button");
     del.className = "iconBtn danger";
-    del.textContent = "Remove";
+    del.textContent = "✕";
     del.addEventListener("click", () => {
-      state.packing = state.packing.filter(x => x.id !== item.id);
-      save();
+      state.packing = state.packing.filter(p => p.id !== item.id);
+      saveState();
       renderPacking();
     });
-    right.appendChild(del);
 
+    right.appendChild(del);
     row.appendChild(left);
     row.appendChild(right);
     list.appendChild(row);
   }
-
-  // Tips
-  const tips = [
-    "Bring a small poncho + a zip bag for phones.",
-    "Pack sunscreen + blister bandaids in your day bag.",
-    "Refillable water bottle saves money.",
-    "Portable charger = hero move.",
-    "Set a meeting spot in case someone gets separated."
-  ];
-  const ul = $("packTips");
-  ul.innerHTML = "";
-  tips.forEach(t => {
-    const li = document.createElement("li");
-    li.textContent = t;
-    ul.appendChild(li);
-  });
 }
 
-function renderNotes() {
-  $("notesText").value = state.notes || "";
-  const reminder = [
-    "Take a mid-day break if anyone gets cranky.",
-    "Snack + water solves 70% of problems.",
-    "Early photos = best lighting + less crowds.",
-    "Pick 1–2 must-dos per day; everything else is bonus."
-  ];
-  const wrap = $("reminders");
-  wrap.innerHTML = "";
-  reminder.forEach(r => {
-    const div = document.createElement("div");
-    div.className = "callout";
-    div.textContent = r;
-    wrap.appendChild(div);
-  });
-}
+// ---------- Activities ----------
+function renderActivities(){
+  const sub = state.ui.activitiesSubtab || "free";
+  const parkFilter = $("#actParkFilter").value || "";
+  const q = ($("#actSearch").value || "").toLowerCase().trim();
 
-function renderActivities() {
-  const seg = state.ui.activitySeg;
-  const list = $("activityList");
-  list.innerHTML = "";
+  const root = $("#activitiesList");
+  root.innerHTML = "";
 
-  const items = state.activities[seg];
-  $("activityTitle").textContent = seg === "free" ? "Free Activities" : "Activities That Cost Money";
+  const list = (sub === "free" ? ACTIVITIES_SEED.free : ACTIVITIES_SEED.paid)
+    .filter(a => !parkFilter || a.park === parkFilter)
+    .filter(a => !q || (a.title.toLowerCase().includes(q) || (a.note||"").toLowerCase().includes(q)));
 
-  items.forEach(a => {
+  for(const a of list){
     const card = document.createElement("div");
-    card.className = "activityCard" + (state.ui.selectedActivityId === a.id ? " active" : "");
-    card.addEventListener("click", () => {
-      state.ui.selectedActivityId = a.id;
-      save();
-      renderActivities();
-      $("actSelectedInfo").textContent = `Selected: ${a.title}`;
-    });
+    card.className = "gridCard";
 
-    const name = document.createElement("div");
-    name.className = "activityName";
-    name.textContent = a.title;
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = a.title;
 
     const meta = document.createElement("div");
-    meta.className = "activityMeta";
-    meta.textContent = `${a.park} • ${a.cost ? fmtMoney(a.cost) : "Free"}`;
+    meta.className = "meta";
+    meta.textContent = `${a.park} • ${sub === "free" ? "Free" : `Est. $${Number(a.cost||0)}`}`;
 
-    card.appendChild(name);
-    card.appendChild(meta);
-    list.appendChild(card);
-  });
+    const note = document.createElement("div");
+    note.className = "meta";
+    note.textContent = a.note || "";
 
-  fillSelect($("actDay"), state.days.map(d => ({ value: d.id, label: `${d.label} (${d.park})` })));
-  fillSelect($("actPark"), PARKS);
-}
+    const actions = document.createElement("div");
+    actions.className = "actions";
 
-function currentDiningList() {
-  const park = $("diningPark").value;
-  const type = $("diningType").value;
-  const q = $("diningSearch").value.trim().toLowerCase();
-  const src = DINING_DB[type][park] || [];
-  return src.filter(x => !q || x.name.toLowerCase().includes(q));
-}
-
-function renderDining() {
-  fillSelect($("diningPark"), ["Magic Kingdom", "EPCOT", "Hollywood Studios", "Animal Kingdom"]);
-  fillSelect($("dinPark"), PARKS);
-  fillSelect($("dinDay"), state.days.map(d => ({ value: d.id, label: `${d.label} (${d.park})` })));
-
-  const list = $("diningList");
-  list.innerHTML = "";
-
-  const type = $("diningType").value;
-  const park = $("diningPark").value;
-
-  const items = currentDiningList();
-  items.forEach(x => {
-    const key = `${type}::${park}::${x.name}`;
-    const card = document.createElement("div");
-    card.className = "diningCard" + (state.ui.selectedDiningKey === key ? " active" : "");
-    card.addEventListener("click", () => {
-      state.ui.selectedDiningKey = key;
-      save();
-      renderDining();
-      $("dinSelectedInfo").textContent = `Selected: ${x.name}`;
+    const btnAdd = document.createElement("button");
+    btnAdd.className = "btn";
+    btnAdd.textContent = "Add to Itinerary";
+    btnAdd.addEventListener("click", () => {
+      const day = guessDayFromDates();
+      state.itinerary.push(makeItineraryRow(day, "12:00", a.park, a.title, "none", "", Number(a.cost||0)));
+      saveState();
+      renderItinerary();
+      renderBudget();
+      setActiveTab("itinerary");
     });
 
-    const name = document.createElement("div");
-    name.className = "diningName";
-    name.textContent = x.name;
+    actions.appendChild(btnAdd);
 
-    const sub = document.createElement("div");
-    sub.className = "diningSub";
-    sub.textContent = `${park} • ${type === "quick" ? "Quick Service" : "Table Service"} • ${x.area || "Area"}`;
+    card.appendChild(title);
+    card.appendChild(meta);
+    card.appendChild(note);
+    card.appendChild(actions);
 
-    card.appendChild(name);
-    card.appendChild(sub);
-    list.appendChild(card);
-  });
+    root.appendChild(card);
+  }
 }
 
-function renderMaps() {
-  const grid = $("mapsGrid");
+function guessDayFromDates(){
+  // Add to the last day by default, or 1 if empty
+  const maxDay = state.itinerary.reduce((m,r)=>Math.max(m, Number(r.day||1)), 1);
+  return maxDay || 1;
+}
+
+// ---------- Dining ----------
+function getRestaurantsFor(park, type){
+  const base = (DINING_SEED[park] && DINING_SEED[park][type]) ? [...DINING_SEED[park][type]] : [];
+  const custom = state.diningCustom
+    .filter(r => r.park === park && r.type === type)
+    .map(r => r.name);
+  const all = [...new Set([...base, ...custom])].filter(Boolean);
+  all.sort((a,b)=>a.localeCompare(b));
+  return all;
+}
+
+function renderDining(){
+  const park = $("#dinPark").value || "Magic Kingdom";
+  const type = $("#dinType").value || "quick";
+  const q = ($("#dinSearch").value || "").toLowerCase().trim();
+
+  const root = $("#diningList");
+  root.innerHTML = "";
+
+  const restaurants = getRestaurantsFor(park, type)
+    .filter(r => !q || r.toLowerCase().includes(q));
+
+  for(const name of restaurants){
+    const card = document.createElement("div");
+    card.className = "gridCard";
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = name;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = `${park} • ${type === "quick" ? "Quick Service" : "Table Service"}`;
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = "Add to Itinerary";
+    btn.addEventListener("click", () => {
+      const day = guessDayFromDates();
+      // Add as a dining row, but let you set time later
+      state.itinerary.push(makeItineraryRow(day, "12:00", park, "Dining", type, name, 0));
+      saveState();
+      renderItinerary();
+      setActiveTab("itinerary");
+    });
+
+    actions.appendChild(btn);
+
+    card.appendChild(title);
+    card.appendChild(meta);
+    card.appendChild(actions);
+
+    root.appendChild(card);
+  }
+}
+
+// ---------- Maps ----------
+function renderMaps(){
+  const grid = $("#mapGrid");
   grid.innerHTML = "";
-  MAPS.forEach(m => {
+  for(const m of MAPS){
     const card = document.createElement("div");
     card.className = "mapCard";
 
-    const title = document.createElement("div");
-    title.className = "mapTitle";
-    title.textContent = m.title;
-
-    const frameWrap = document.createElement("div");
-    frameWrap.className = "mapFrame";
+    const head = document.createElement("div");
+    head.className = "mapCardHeader";
+    head.textContent = m.name;
 
     const iframe = document.createElement("iframe");
-    iframe.title = `${m.title} map`;
-    iframe.src = m.embed;
-    iframe.width = "100%";
-    iframe.height = "100%";
+    iframe.className = "mapFrame";
     iframe.loading = "lazy";
     iframe.referrerPolicy = "no-referrer-when-downgrade";
-    iframe.style.border = "0";
+    iframe.src = m.src;
 
-    frameWrap.appendChild(iframe);
-
-    const actions = document.createElement("div");
-    actions.className = "mapActions";
-    const open = document.createElement("a");
-    open.className = "btn ghost";
-    open.href = m.open;
-    open.target = "_blank";
-    open.rel = "noreferrer";
-    open.textContent = "Open Full Map";
-
-    actions.appendChild(open);
-
-    card.appendChild(title);
-    card.appendChild(frameWrap);
-    card.appendChild(actions);
+    card.appendChild(head);
+    card.appendChild(iframe);
     grid.appendChild(card);
-  });
+  }
 }
 
-function renderHiddenFinds() {
-  fillSelect($("hiddenPark"), [{ value: "", label: "All Parks" }, ...PARKS.map(p => ({ value: p, label: p }))]);
-  const park = $("hiddenPark").value;
-  const q = $("hiddenSearch").value.trim().toLowerCase();
+// ---------- Hidden Finds ----------
+let selectedHmId = null;
 
-  const list = $("hiddenList");
+function renderHiddenFinds(){
+  const park = $("#hmPark").value || "";
+  const q = ($("#hmSearch").value || "").toLowerCase().trim();
+
+  const list = $("#hmList");
   list.innerHTML = "";
 
-  const items = state.hiddenFinds.filter(h => {
-    const okPark = !park || h.park === park;
-    const blob = `${h.location} ${h.hint}`.toLowerCase();
-    const okQ = !q || blob.includes(q);
-    return okPark && okQ;
-  });
+  const items = state.hiddenFinds
+    .filter(i => !park || i.park === park)
+    .filter(i => !q || i.title.toLowerCase().includes(q) || (i.hint||"").toLowerCase().includes(q));
 
-  items.forEach(h => {
+  for(const item of items){
     const row = document.createElement("div");
-    row.className = "hiddenRow" + (state.ui.selectedHiddenId === h.id ? " active" : "");
-    row.addEventListener("click", () => {
-      state.ui.selectedHiddenId = h.id;
-      save();
-      renderHiddenFinds();
-      renderHiddenPhoto();
-    });
+    row.className = "listItem";
+    row.style.cursor = "pointer";
 
-    const top = document.createElement("div");
-    top.className = "hiddenTopLine";
+    const left = document.createElement("div");
+    left.className = "listLeft";
 
-    const title = document.createElement("div");
-    title.className = "hiddenTitle";
-    title.textContent = `${h.park}: ${h.location}`;
-
-    const badge = document.createElement("div");
-    badge.className = "badge";
-    badge.textContent = h.found ? "Found ✅" : "Not found";
-
-    top.appendChild(title);
-    top.appendChild(badge);
-
-    const hint = document.createElement("div");
-    hint.className = "hiddenHint";
-    hint.textContent = `Hint: ${h.hint}`;
-
-    const line = document.createElement("div");
-    line.className = "checkLeft";
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.checked = !!h.found;
-    cb.addEventListener("click", (e) => e.stopPropagation());
-    cb.addEventListener("change", () => {
-      h.found = cb.checked;
-      save();
-      renderHiddenFinds();
-      renderHiddenPhoto();
+    cb.className = "check";
+    cb.checked = !!item.checked;
+    cb.addEventListener("click", (e) => {
+      e.stopPropagation();
     });
-    line.appendChild(cb);
+    cb.addEventListener("change", () => {
+      item.checked = cb.checked;
+      item.status = item.checked ? "found" : "not_found";
+      saveState();
+      // update detail panel if selected
+      if(selectedHmId === item.id) showHiddenDetail(item.id);
+      renderHiddenFinds(); // keep list updated
+    });
 
-    row.appendChild(top);
-    row.appendChild(hint);
-    row.appendChild(line);
+    const text = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "listTitle";
+    title.textContent = item.title;
+
+    const meta = document.createElement("div");
+    meta.className = "listMeta";
+    meta.textContent = `${item.park} • ${item.status === "found" ? "Found" : "Not found"}`;
+
+    text.appendChild(title);
+    text.appendChild(meta);
+
+    left.appendChild(cb);
+    left.appendChild(text);
+
+    const right = document.createElement("div");
+    right.className = "listRight";
+
+    const badge = document.createElement("div");
+    badge.className = "listMeta";
+    badge.style.fontWeight = "950";
+    badge.textContent = item.status === "found" ? "✅" : "🔎";
+
+    right.appendChild(badge);
+
+    row.appendChild(left);
+    row.appendChild(right);
+
+    row.addEventListener("click", () => showHiddenDetail(item.id));
+
     list.appendChild(row);
-  });
-}
-
-function renderHiddenPhoto() {
-  const preview = $("photoPreview");
-  const sel = state.hiddenFinds.find(h => h.id === state.ui.selectedHiddenId);
-  if (!sel) {
-    preview.textContent = "No item selected.";
-    $("photoHelp").textContent = "Select an item to add a photo.";
-    return;
   }
 
-  if (!sel.photo) {
-    preview.textContent = "No photo yet.";
+  // keep selection if exists
+  if(selectedHmId){
+    const stillExists = state.hiddenFinds.some(i => i.id === selectedHmId);
+    if(!stillExists){
+      selectedHmId = null;
+      hideHiddenDetail();
+    }
+  }
+}
+
+function showHiddenDetail(id){
+  selectedHmId = id;
+  const item = state.hiddenFinds.find(i => i.id === id);
+  if(!item) return;
+
+  $("#hmDetailEmpty").style.display = "none";
+  $("#hmDetail").classList.remove("hidden");
+
+  $("#hmTitle").value = item.title || "";
+  $("#hmHint").value = item.hint || "";
+  $("#hmStatus").value = item.status || "not_found";
+  $("#hmChecked").checked = !!item.checked;
+
+  const img = $("#hmPhotoPreview");
+  const empty = $("#hmPhotoEmpty");
+  if(item.photoDataUrl){
+    img.src = item.photoDataUrl;
+    img.style.display = "block";
+    empty.style.display = "none";
   } else {
-    preview.innerHTML = "";
-    const img = document.createElement("img");
-    img.src = sel.photo;
-    img.alt = "Hidden find photo";
-    preview.appendChild(img);
+    img.removeAttribute("src");
+    img.style.display = "none";
+    empty.style.display = "block";
   }
-  $("photoHelp").textContent = `Selected: ${sel.location} (${sel.park})`;
 }
 
-function renderFilterAndDayUI() {
-  fillSelect($("filterPark"), PARKS, { includeAll: true, allLabel: "All Parks" });
-  $("filterPark").value = state.filterPark || "";
-  fillSelect($("addDayPark"), PARKS);
-  $("addDayPark").value = "Magic Kingdom";
+function hideHiddenDetail(){
+  $("#hmDetailEmpty").style.display = "block";
+  $("#hmDetail").classList.add("hidden");
 }
 
-function renderTabs() {
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.tab === state.ui.tab);
-  });
-  document.querySelectorAll(".tabPanel").forEach(p => {
-    p.classList.toggle("active", p.id === `tab-${state.ui.tab}`);
-  });
-}
+function updateSelectedHiddenField(field, value){
+  if(!selectedHmId) return;
+  const item = state.hiddenFinds.find(i => i.id === selectedHmId);
+  if(!item) return;
 
-function renderAll() {
-  renderTrip();
-  renderTabs();
-  renderFilterAndDayUI();
+  item[field] = value;
 
-  renderItinerary();
-  renderPacking();
-  renderNotes();
-  renderActivities();
-  renderDining();
-  renderMaps();
+  // keep status/checked in sync
+  if(field === "checked"){
+    item.status = value ? "found" : "not_found";
+    $("#hmStatus").value = item.status;
+  }
+  if(field === "status"){
+    item.checked = (value === "found");
+    $("#hmChecked").checked = item.checked;
+  }
+
+  saveState();
+  showHiddenDetail(selectedHmId);
+  // list refresh to show status changes
   renderHiddenFinds();
-  renderHiddenPhoto();
-
-  // fill shared “Day” selects that depend on days
-  fillSelect($("actDay"), state.days.map(d => ({ value: d.id, label: `${d.label} (${d.park})` })));
-  fillSelect($("dinDay"), state.days.map(d => ({ value: d.id, label: `${d.label} (${d.park})` })));
 }
 
-/* ---------- Actions ---------- */
-
-function addDay(park) {
-  const nextNum = state.days.length + 1;
-  state.days.push({ id: uid(), label: `Day ${nextNum}`, park });
-  save();
-  renderAll();
-  toast(`Added Day ${nextNum}.`);
-}
-
-function addItineraryItem(partial = {}) {
-  state.itinerary.push({
-    id: uid(),
-    dayId: state.days[0]?.id || "",
-    time: "09:00",
-    park: partial.park || "Magic Kingdom",
-    plan: partial.plan || "",
-    dining: partial.dining || "",
-    cost: Number(partial.cost || 0)
+function fileToDataUrl(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
-  save();
-  renderAll();
-  toast("Added itinerary item.");
 }
 
-function autoCreateDaysFromDates() {
-  const s = state.trip.startDate;
-  const e = state.trip.endDate;
-  if (!s || !e) {
-    toast("Add start and end dates first.");
-    return;
-  }
-  const start = new Date(s + "T00:00:00");
-  const end = new Date(e + "T00:00:00");
-  const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-  if (!Number.isFinite(diffDays) || diffDays <= 0) {
-    toast("Date range looks invalid.");
-    return;
-  }
-  const keep = confirm(`Create ${diffDays} days from your dates? This will replace your current Day list.`);
-  if (!keep) return;
+// ---------- Top actions ----------
+function bindTopActions(){
+  $("#btnReset").addEventListener("click", () => {
+    const ok = confirm("Reset everything on this device? This cannot be undone.");
+    if(!ok) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = defaultState();
+    saveState();
+    renderAll();
+  });
 
-  state.days = [];
-  for (let i = 1; i <= diffDays; i++) {
-    state.days.push({ id: uid(), label: `Day ${i}`, park: i === 1 ? "Magic Kingdom" : "Resort Day" });
-  }
+  $("#btnExportBackup").addEventListener("click", () => {
+    const data = JSON.stringify(state, null, 2);
+    downloadFile(`vacation_planner_backup_${todayStamp()}.json`, data, "application/json");
+  });
 
-  // keep itinerary dayId valid
-  const first = state.days[0]?.id || "";
-  state.itinerary = state.itinerary.map(it => ({ ...it, dayId: first }));
+  $("#fileImportBackup").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      // minimal validation
+      if(!parsed.trip || !parsed.itinerary || !parsed.hiddenFinds){
+        alert("That backup file doesn’t look right.");
+        return;
+      }
+      state = parsed;
+      saveState();
+      renderAll();
+      alert("Backup imported!");
+    }catch{
+      alert("Could not import that file.");
+    }finally{
+      e.target.value = "";
+    }
+  });
 
-  save();
-  renderAll();
-  toast("Days created from dates.");
+  $("#btnExportICS").addEventListener("click", () => {
+    const ics = buildICS();
+    downloadFile(`vacation_planner_${todayStamp()}.ics`, ics, "text/calendar");
+    alert("Calendar file downloaded (.ics). Import it into Google Calendar or iOS Calendar.");
+  });
 }
 
-function exportJSON() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+function todayStamp(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "vacation-planner-backup.json";
+  a.download = filename;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
-  toast("Backup exported.");
 }
 
-function importJSON(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const data = JSON.parse(String(reader.result || ""));
-      if (!data || typeof data !== "object") throw new Error("bad");
-      state = data;
-      save();
-      renderAll();
-      toast("Backup imported.");
-    } catch {
-      toast("Import failed. File might be invalid.");
-    }
-  };
-  reader.readAsText(file);
-}
+// ---------- ICS (Calendar Export) ----------
+function buildICS(){
+  // Uses trip.startDate + day offset
+  // Each itinerary row becomes a VEVENT if it has a park/plan
+  const startDate = state.trip.startDate;
+  if(!startDate){
+    alert("Add a Start date first (Trip Snapshot).");
+    return "";
+  }
 
-/* ---------- Calendar Export (ICS) ---------- */
-
-function toICSDate(dt) {
-  // dt should be Date
-  const pad = (n) => String(n).padStart(2, "0");
-  return (
-    dt.getUTCFullYear() +
-    pad(dt.getUTCMonth() + 1) +
-    pad(dt.getUTCDate()) +
-    "T" +
-    pad(dt.getUTCHours()) +
-    pad(dt.getUTCMinutes()) +
-    "00Z"
-  );
-}
-
-function buildICS() {
-  // We try to map Day N to real dates using startDate. If no start date, we export all-day events without date.
-  const start = state.trip.startDate ? new Date(state.trip.startDate + "T00:00:00") : null;
+  const events = state.itinerary
+    .slice()
+    .sort((a,b)=> (a.day-b.day) || (a.time||"").localeCompare(b.time||""))
+    .map(row => rowToEvent(row, startDate))
+    .filter(Boolean);
 
   const lines = [];
   lines.push("BEGIN:VCALENDAR");
@@ -847,351 +1218,170 @@ function buildICS() {
   lines.push("CALSCALE:GREGORIAN");
   lines.push("METHOD:PUBLISH");
 
-  // Group itinerary by day order
-  const dayIndex = new Map(state.days.map((d, i) => [d.id, i]));
-  const items = [...state.itinerary].sort((a, b) => (dayIndex.get(a.dayId) ?? 0) - (dayIndex.get(b.dayId) ?? 0));
-
-  items.forEach((it) => {
-    const dIdx = dayIndex.get(it.dayId) ?? 0;
-
-    let eventStart = null;
-    let eventEnd = null;
-
-    if (start) {
-      const base = new Date(start.getTime());
-      base.setDate(base.getDate() + dIdx);
-
-      const [hh, mm] = (it.time || "09:00").split(":").map(x => parseInt(x, 10));
-      const sdt = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hh || 9, mm || 0, 0);
-      const edt = new Date(sdt.getTime() + 60 * 60 * 1000); // 1 hour default
-      eventStart = sdt;
-      eventEnd = edt;
-    }
-
-    const summary = `${(it.park || "Plan")} — ${it.plan || "Itinerary item"}`.replace(/\n/g, " ");
-    const descParts = [];
-    if (it.dining) descParts.push(`Dining: ${it.dining}`);
-    if (it.cost) descParts.push(`Estimated cost: ${fmtMoney(it.cost)}`);
-    descParts.push(`Day: ${dayLabel(it.dayId)}`);
-    const description = descParts.join("\\n");
-
+  for(const ev of events){
     lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${it.id}@vacationplanner`);
-    lines.push(`DTSTAMP:${toICSDate(new Date())}`);
-    lines.push(`SUMMARY:${summary}`);
-    lines.push(`DESCRIPTION:${description}`);
-    if (eventStart && eventEnd) {
-      lines.push(`DTSTART:${toICSDate(eventStart)}`);
-      lines.push(`DTEND:${toICSDate(eventEnd)}`);
-    } else {
-      // floating event with no date
-      lines.push(`COMMENT:No startDate set in Trip Snapshot; set dates to export timed events.`);
-    }
+    lines.push(`UID:${ev.uid}`);
+    lines.push(`DTSTAMP:${ev.dtstamp}`);
+    lines.push(`DTSTART:${ev.dtstart}`);
+    lines.push(`DTEND:${ev.dtend}`);
+    lines.push(`SUMMARY:${escapeICS(ev.summary)}`);
+    lines.push(`DESCRIPTION:${escapeICS(ev.description)}`);
+    lines.push(`LOCATION:${escapeICS(ev.location)}`);
     lines.push("END:VEVENT");
-  });
+  }
 
   lines.push("END:VCALENDAR");
   return lines.join("\r\n");
 }
 
-function exportICS() {
-  const ics = buildICS();
-  const blob = new Blob([ics], { type: "text/calendar" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "vacation-planner-calendar.ics";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast("Calendar exported (.ics). Import into Google/iOS Calendar.");
+function rowToEvent(row, tripStart){
+  // Compute date: tripStart + (day-1)
+  const base = new Date(tripStart + "T00:00:00");
+  if(isNaN(base.getTime())) return null;
+
+  const dayOffset = Math.max(0, Number(row.day||1) - 1);
+  const date = new Date(base);
+  date.setDate(base.getDate() + dayOffset);
+
+  // Parse time
+  const t = row.time || "12:00";
+  const [hh, mm] = t.split(":").map(n => Number(n||0));
+  date.setHours(hh, mm, 0, 0);
+
+  const end = new Date(date);
+  end.setMinutes(end.getMinutes() + 60); // default 1 hour block
+
+  const summaryParts = [];
+  if(row.park) summaryParts.push(row.park);
+  if(row.plan) summaryParts.push(row.plan);
+  const summary = summaryParts.join(" — ").slice(0, 180);
+
+  let description = "";
+  if(row.diningType === "quick" || row.diningType === "table"){
+    description += `Dining: ${row.diningType === "quick" ? "Quick Service" : "Table Service"}`;
+    if(row.restaurant) description += ` • ${row.restaurant}`;
+    description += "\\n";
+  }
+  if(row.cost) description += `Cost: $${Number(row.cost||0)}\\n`;
+  description += `Trip: ${state.trip.name || "Vacation"}\\n`;
+
+  return {
+    uid: `${row.id}@vacation-planner`,
+    dtstamp: toICSDateTime(new Date()),
+    dtstart: toICSDateTime(date),
+    dtend: toICSDateTime(end),
+    summary: summary || "Vacation Plan",
+    description,
+    location: row.park || "Walt Disney World"
+  };
 }
 
-/* ---------- Sparkle Background ---------- */
+function toICSDateTime(d){
+  // floating local time: YYYYMMDDTHHMMSS
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  const hh = String(d.getHours()).padStart(2,"0");
+  const mi = String(d.getMinutes()).padStart(2,"0");
+  const ss = String(d.getSeconds()).padStart(2,"0");
+  return `${yyyy}${mm}${dd}T${hh}${mi}${ss}`;
+}
 
-function startSparkles() {
-  const canvas = $("sparkleCanvas");
+function escapeICS(s){
+  return String(s || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+// ---------- Sparkles (fairy dust) ----------
+function startSparkles(){
+  const canvas = $("#sparkles");
   const ctx = canvas.getContext("2d");
+  let w=0,h=0;
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
 
-  let w = 0, h = 0;
-  function resize() {
-    w = canvas.width = Math.floor(window.innerWidth * devicePixelRatio);
-    h = canvas.height = Math.floor(window.innerHeight * devicePixelRatio);
+  function resize(){
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w * DPR);
+    canvas.height = Math.floor(h * DPR);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
   }
   window.addEventListener("resize", resize);
   resize();
 
-  const rand = (a, b) => a + Math.random() * (b - a);
+  const particles = [];
+  const max = 85;
 
-  const sparkles = Array.from({ length: 140 }, () => ({
-    x: rand(0, w),
-    y: rand(0, h),
-    r: rand(0.8, 2.4) * devicePixelRatio,
-    vx: rand(-0.12, 0.12) * devicePixelRatio,
-    vy: rand(-0.22, 0.28) * devicePixelRatio,
-    a: rand(0.15, 0.75),
-    tw: rand(0.002, 0.01),
-    hue: rand(180, 320)
-  }));
+  function spawn(){
+    if(particles.length >= max) return;
+    particles.push({
+      x: Math.random()*w,
+      y: Math.random()*h,
+      r: 0.8 + Math.random()*2.2,
+      a: 0.15 + Math.random()*0.45,
+      vx: -0.15 + Math.random()*0.3,
+      vy: -0.10 + Math.random()*0.25,
+      tw: 0.01 + Math.random()*0.03,
+      t: Math.random()*Math.PI*2
+    });
+  }
+  for(let i=0;i<max;i++) spawn();
 
-  function tick() {
-    ctx.clearRect(0, 0, w, h);
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    for(const p of particles){
+      p.t += p.tw;
+      p.x += p.vx;
+      p.y += p.vy;
 
-    // soft glow overlay
-    ctx.globalCompositeOperation = "lighter";
+      // wrap
+      if(p.x < -20) p.x = w+20;
+      if(p.x > w+20) p.x = -20;
+      if(p.y < -20) p.y = h+20;
+      if(p.y > h+20) p.y = -20;
 
-    for (const s of sparkles) {
-      s.x += s.vx;
-      s.y += s.vy;
-      s.a += Math.sin(Date.now() * s.tw) * 0.008;
+      const twinkle = (Math.sin(p.t)*0.5+0.5);
+      const alpha = p.a * (0.35 + twinkle*0.95);
 
-      if (s.x < -50) s.x = w + 50;
-      if (s.x > w + 50) s.x = -50;
-      if (s.y < -50) s.y = h + 50;
-      if (s.y > h + 50) s.y = -50;
-
-      const alpha = clamp(s.a, 0.05, 0.85);
-      const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 10);
-      grad.addColorStop(0, `hsla(${s.hue}, 90%, 75%, ${alpha})`);
-      grad.addColorStop(1, `hsla(${s.hue}, 90%, 75%, 0)`);
-      ctx.fillStyle = grad;
+      // glow dot
       ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r * 10, 0, Math.PI * 2);
-      ctx.fill();
-
-      // tiny star point
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
       ctx.fill();
-    }
 
-    ctx.globalCompositeOperation = "source-over";
+      // tiny cross sparkle sometimes
+      if(twinkle > 0.85){
+        ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(p.x - p.r*2.4, p.y);
+        ctx.lineTo(p.x + p.r*2.4, p.y);
+        ctx.moveTo(p.x, p.y - p.r*2.4);
+        ctx.lineTo(p.x, p.y + p.r*2.4);
+        ctx.stroke();
+      }
+    }
     requestAnimationFrame(tick);
   }
   tick();
 }
 
-/* ---------- Wire up events ---------- */
+// ---------- Final: initial render helpers ----------
+function bindTopActionsOnce(){}
 
-function bind() {
-  // Trip fields
-  $("tripName").addEventListener("input", (e) => { state.trip.name = e.target.value; save(); });
-  $("startDate").addEventListener("change", (e) => { state.trip.startDate = e.target.value; save(); renderTrip(); });
-  $("endDate").addEventListener("change", (e) => { state.trip.endDate = e.target.value; save(); renderTrip(); });
-  $("partySize").addEventListener("change", (e) => { state.trip.partySize = clamp(Number(e.target.value || 1), 1, 30); save(); renderTrip(); });
-  $("budget").addEventListener("change", (e) => { state.trip.budget = clamp(Number(e.target.value || 0), 0, 999999); save(); renderTrip(); });
-  $("welcomeMsg").addEventListener("input", (e) => { state.trip.welcomeMsg = e.target.value; save(); renderTrip(); });
+function renderBackupStuff(){}
 
-  // Resorts
-  fillSelect($("resortSelect"), RESORTS.map((r, i) => ({ value: r, label: r })));
-  $("resortSelect").value = state.trip.resort || RESORTS[0];
-  $("resortSelect").addEventListener("change", (e) => {
-    state.trip.resort = e.target.value;
-    save();
-    renderTrip();
-  });
+// ---------- Boot ----------
+function bindTopActionsOnceNoop(){}
 
-  // Tabs
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      state.ui.tab = btn.dataset.tab;
-      save();
-      renderTabs();
-    });
-  });
+function renderItineraryOnce(){}
 
-  // Filter
-  $("filterPark").addEventListener("change", (e) => {
-    state.filterPark = e.target.value;
-    save();
-    renderItinerary();
-  });
-  $("btnClearFilter").addEventListener("click", () => {
-    state.filterPark = "";
-    $("filterPark").value = "";
-    save();
-    renderItinerary();
-  });
-
-  // Add day
-  $("btnAddDay").addEventListener("click", () => addDay($("addDayPark").value));
-
-  // Add itinerary item
-  $("btnAddItem").addEventListener("click", () => addItineraryItem({}));
-  $("btnExpandDays").addEventListener("click", autoCreateDaysFromDates);
-
-  // Packing
-  $("packAdd").addEventListener("click", () => {
-    const text = $("packNew").value.trim();
-    if (!text) return;
-    state.packing.push({ id: uid(), text, done: false });
-    $("packNew").value = "";
-    save();
-    renderPacking();
-    toast("Added packing item.");
-  });
-
-  // Notes
-  $("notesText").addEventListener("input", (e) => {
-    state.notes = e.target.value;
-    save();
-  });
-
-  // Activities segmented
-  document.querySelectorAll(".seg").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".seg").forEach(x => x.classList.remove("active"));
-      btn.classList.add("active");
-      state.ui.activitySeg = btn.dataset.seg;
-      state.ui.selectedActivityId = "";
-      $("actSelectedInfo").textContent = "No activity selected.";
-      save();
-      renderActivities();
-    });
-  });
-
-  $("btnAddActivityToItinerary").addEventListener("click", () => {
-    const id = state.ui.selectedActivityId;
-    const seg = state.ui.activitySeg;
-    const act = state.activities[seg].find(a => a.id === id);
-    if (!act) {
-      toast("Select an activity first.");
-      return;
-    }
-    const dayId = $("actDay").value || state.days[0]?.id;
-    const time = $("actTime").value || "10:00";
-    const park = $("actPark").value || act.park || "Resort Day";
-    const extraCost = Number($("actCost").value || 0);
-    const baseCost = Number(act.cost || 0);
-    addItineraryItem({
-      park,
-      plan: act.title,
-      dining: "",
-      cost: baseCost + extraCost
-    });
-    // set values on last item
-    const last = state.itinerary[state.itinerary.length - 1];
-    last.dayId = dayId;
-    last.time = time;
-    last.park = park;
-    save();
-    renderAll();
-    toast("Added activity to itinerary.");
-  });
-
-  // Dining
-  $("diningPark").addEventListener("change", renderDining);
-  $("diningType").addEventListener("change", renderDining);
-  $("diningSearch").addEventListener("input", renderDining);
-
-  $("btnAddDiningToItinerary").addEventListener("click", () => {
-    const key = state.ui.selectedDiningKey;
-    if (!key) {
-      toast("Select a dining option first.");
-      return;
-    }
-    const [type, park, name] = key.split("::");
-    const dayId = $("dinDay").value || state.days[0]?.id;
-    const time = $("dinTime").value || "12:00";
-    const itPark = $("dinPark").value || park || "Resort Day";
-    const cost = Number($("dinCost").value || 0);
-
-    addItineraryItem({
-      park: itPark,
-      plan: `Dining: ${name}`,
-      dining: type === "quick" ? "Quick Service" : "Table Service",
-      cost
-    });
-    const last = state.itinerary[state.itinerary.length - 1];
-    last.dayId = dayId;
-    last.time = time;
-    last.park = itPark;
-    save();
-    renderAll();
-    toast("Added dining plan to itinerary.");
-  });
-
-  // Hidden finds filters
-  $("hiddenPark").addEventListener("change", renderHiddenFinds);
-  $("hiddenSearch").addEventListener("input", renderHiddenFinds);
-
-  // Photo pick
-  $("photoPick").addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const sel = state.hiddenFinds.find(h => h.id === state.ui.selectedHiddenId);
-    if (!sel) { toast("Select a hidden find first."); return; }
-
-    const dataUrl = await fileToDataURL(file);
-    sel.photo = dataUrl;
-    sel.found = true;
-    save();
-    renderHiddenFinds();
-    renderHiddenPhoto();
-    toast("Photo saved.");
-    e.target.value = "";
-  });
-
-  $("btnRemovePhoto").addEventListener("click", () => {
-    const sel = state.hiddenFinds.find(h => h.id === state.ui.selectedHiddenId);
-    if (!sel) { toast("Select an item first."); return; }
-    sel.photo = "";
-    save();
-    renderHiddenPhoto();
-    toast("Photo removed.");
-  });
-
-  // Export / Import / Reset / Calendar
-  $("btnExportICS").addEventListener("click", exportICS);
-  $("btnExportJSON").addEventListener("click", exportJSON);
-  $("fileImportJSON").addEventListener("change", (e) => {
-    const f = e.target.files?.[0];
-    if (f) importJSON(f);
-    e.target.value = "";
-  });
-
-  $("btnReset").addEventListener("click", () => {
-    const ok = confirm("Reset this device planner? This cannot be undone.");
-    if (!ok) return;
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
-  });
-}
-
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
-/* ---------- Init ---------- */
-
-function init() {
-  // default selects
-  fillSelect($("resortSelect"), RESORTS);
-  $("resortSelect").value = state.trip.resort || RESORTS[0];
-
-  fillSelect($("filterPark"), PARKS, { includeAll: true, allLabel: "All Parks" });
-  $("filterPark").value = state.filterPark || "";
-
-  fillSelect($("addDayPark"), PARKS);
-  fillSelect($("actPark"), PARKS);
-  fillSelect($("dinPark"), PARKS);
-
-  // activity segmented initial
-  document.querySelectorAll(".seg").forEach(b => b.classList.toggle("active", b.dataset.seg === state.ui.activitySeg));
-
-  // dining defaults
-  $("diningPark").value = "Magic Kingdom";
-  $("diningType").value = "quick";
-
-  bind();
-  renderAll();
-  startSparkles();
-  toast("Ready ✨");
-}
-
-document.addEventListener("DOMContentLoaded", init);
+// ---------- Ensure UI reflects active tab on load ----------
+(function(){
+  // nothing here; DOMContentLoaded handles it
+})();

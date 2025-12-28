@@ -546,3 +546,67 @@ textarea{ resize: vertical; }
   .gridList{ grid-template-columns: 1fr; }
   .mapGrid{ grid-template-columns: 1fr; }
 }
+/* ============================= */
+/* PASSWORD LOCK OVERLAY */
+/* ============================= */
+
+#lockScreen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #0b1d3a, #020814);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.lockCard {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 32px;
+  border-radius: 18px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+  color: #fff;
+}
+
+.lockCard h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.lockCard p {
+  font-size: 14px;
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+
+.lockCard input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.lockCard button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4f8cff, #7aa7ff);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lockError {
+  color: #ff7b7b;
+  font-size: 13px;
+  margin-top: 8px;
+  display: none;
+}

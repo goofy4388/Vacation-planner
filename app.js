@@ -1,3 +1,31 @@
+// PASSWORD PROTECTION
+const PAGE_PASSWORD = "disney"; // CHANGE THIS
+
+document.addEventListener("DOMContentLoaded", () => {
+  const lockScreen = document.getElementById("lockScreen");
+  const input = document.getElementById("passwordInput");
+  const btn = document.getElementById("unlockBtn");
+  const error = document.getElementById("lockError");
+
+  // already unlocked?
+  if (localStorage.getItem("unlocked") === "true") {
+    lockScreen.style.display = "none";
+  }
+
+  btn.addEventListener("click", unlock);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") unlock();
+  });
+
+  function unlock() {
+    if (input.value === PAGE_PASSWORD) {
+      localStorage.setItem("unlocked", "true");
+      lockScreen.style.display = "none";
+    } else {
+      error.style.display = "block";
+    }
+  }
+});
 /* =========================================================
   Vacation Planner (single-file JS)
   - Auto-saves to localStorage

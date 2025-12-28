@@ -6,6 +6,23 @@
   <title>Vacation Planner</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+<!-- PASSWORD GATE -->
+<div id="lockScreen">
+  <div class="lockCard">
+    <h2>Private Access</h2>
+    <p>This page is password protected.</p>
+
+    <input
+      type="password"
+      id="passwordInput"
+      placeholder="Enter password"
+    />
+
+    <button id="unlockBtn">Enter</button>
+
+    <p id="lockError">Incorrect password</p>
+  </div>
+</div>
 <body>
   <!-- Fairy dust overlay -->
   <canvas id="sparkles" aria-hidden="true"></canvas>
